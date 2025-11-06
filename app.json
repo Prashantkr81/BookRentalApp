@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "BookRental",
-    "slug": "BookRental",
+    "name": "BookRentalApp",
+    "slug": "BookRentalApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "bookrental",
+    "scheme": "bookrentalapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -38,8 +38,16 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you upload book images."
+        }
       ]
     ],
+    "permissions": ["MEDIA_LIBRARY"],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
