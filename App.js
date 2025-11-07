@@ -1,14 +1,11 @@
 import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
-import { AuthProvider } from "./src/context/AuthContext";
-import AuthNavigator from "./src/navigation/AuthNavigator";
+import MainNavigator from "./src/navigation/MainNavigator";
+import { CartProvider } from "./src/context/CartContext";
 
 export default function App() {
   return (
-    <AuthProvider>
-      <NavigationContainer>
-        <AuthNavigator />
-      </NavigationContainer>
-    </AuthProvider>
+    <CartProvider>
+      <MainNavigator />
+    </CartProvider>
   );
 }

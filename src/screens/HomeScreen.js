@@ -1,27 +1,30 @@
-import React, { useEffect, useState } from "react";
-import { View, FlatList } from "react-native";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../services/firebaseConfig";
-import BookCard from "../components/BookCard";
+import React from "react";
+import { View, Text, ScrollView, StyleSheet } from "react-native";
+import Header from "../components/Header";
 
-export default function HomeScreen() {
-  const [books, setBooks] = useState([]);
-
-  useEffect(() => {
-    const fetchBooks = async () => {
-      const snapshot = await getDocs(collection(db, "books"));
-      setBooks(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-    };
-    fetchBooks();
-  }, []);
-
+export default function HomeScreen({ navigation }) {
   return (
-    <View style={{ flex: 1, padding: 10 }}>
-      <FlatList
-        data={books}
-        renderItem={({ item }) => <BookCard book={item} />}
-        keyExtractor={(item) => item.id}
+    <ScrollView style={styles.container}>
+      {/* Header */}
+      <Header
+        title="Book Rental Home"
+        rightIcon="search-outline"
+        onRightPress={() => navigation.navigate("Search")}
       />
-    </View>
+
+      <View style={styles.body}>
+        <Text style={styles.welcomeText}>Welcome to Book Rental 📚</Text>
+        <Text style={styles.subText}>Find, rent, or lend books in your area</Text>
+      </View>
+
+      {/* You can later add book list / category cards here */}
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#f5f5f5" },
+  body: { padding: 16 },
+  welcomeText: { fontSize: 20, fontWeight: "bold", color: "#333" },
+  subText: { fontSize: 14, color: "#666", marginTop: 6 },
+});
