@@ -2,7 +2,6 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import HomeScreen from "../screens/HomeScreen";
 import AddBookScreen from "../screens/AddBookScreen";
-import MyRentalsScreen from "../screens/MyRentalsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import SearchScreen from "../screens/SearchScreen";
 import { Ionicons } from "@expo/vector-icons"; // ✅ Icon Library
@@ -42,11 +41,8 @@ export default function AppNavigator() {
             case "Add Book":
               iconName = focused ? "add-circle" : "add-circle-outline";
               break;
-            case "My Rentals":
-              iconName = focused ? "book" : "book-outline";
-              break;
             case "Notification":
-              iconName = focused ? "inbox" : "inbox-outline";
+              iconName = focused ? "notifications-outline" : "notifications-outline";
               break;
             case "Profile":
               iconName = focused ? "person" : "person-outline";
@@ -62,8 +58,6 @@ export default function AppNavigator() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Search" component={SearchScreen} />
       <Tab.Screen name="Add Book" component={AddBookScreen} />
-      <Tab.Screen name="My Rentals" component={MyRentalsScreen} />
-      {/* <Tab.Screen name="BookDetails" component={BookDetailScreen} options={{ headerShown: false }} /> */}
       <Tab.Screen name="Notification" component={NotificationsScreen} />
       <Tab.Screen
   name="Cart"

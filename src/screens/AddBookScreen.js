@@ -14,16 +14,16 @@ import * as ImagePicker from "expo-image-picker";
 import { addDoc, collection } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage, auth } from "../services/firebaseConfig";
-import Header from "../components/Header"; // ✅ Import header
+import Header from "../components/Header";
 
 export default function AddBookScreen({ navigation }) {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
+  const [price, setPrice] = useState(""); // 💰 New
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  // 🪪 Ask permission once when screen loads
   useEffect(() => {
     (async () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -36,7 +36,6 @@ export default function AddBookScreen({ navigation }) {
     })();
   }, []);
 
-  // 📸 Pick image (optional)
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -55,10 +54,9 @@ export default function AddBookScreen({ navigation }) {
     }
   };
 
-  // 🧾 Upload book info
   const uploadBook = async () => {
-    if (!title.trim() || !author.trim()) {
-      Alert.alert("Missing info", "Please fill in both title and author fields.");
+    if (!title.trim() || !author.trim() || !price.trim()) {
+      Alert.alert("Missing info", "Please fill in title, author, and price fields.");
       return;
     }
 
@@ -66,7 +64,6 @@ export default function AddBookScreen({ navigation }) {
       setUploading(true);
       let imageUrl;
 
-      // ✅ Upload only if image is selected
       if (image) {
         const imageRef = ref(storage, `books/${Date.now()}.jpg`);
         const response = await fetch(image);
@@ -74,16 +71,14 @@ export default function AddBookScreen({ navigation }) {
         await uploadBytes(imageRef, blob);
         imageUrl = await getDownloadURL(imageRef);
       } else {
-        // ✅ Use placeholder if no image uploaded
-        imageUrl =
-          "https://firebahttps://unsplash.com/photos/shallow-focus-photography-of-books-lUaaKCUANVIsestorage.googleapis.com/v0/b/YOUR_BUCKET_NAME.appspot.com/o/defaults%2Fbook-placeholder.png?alt=media";
+        imageUrl = "https://cdn-icons-png.flaticon.com/512/2232/2232688.png";
       }
 
-      // Save book data in Firestore
       await addDoc(collection(db, "books"), {
         title,
         author,
         description,
+        price: parseFloat(price) || 0,
         image: imageUrl,
         ownerId: auth.currentUser?.uid || "anonymous",
         isAvailable: true,
@@ -91,9 +86,9 @@ export default function AddBookScreen({ navigation }) {
         createdAt: new Date().toISOString(),
       });
 
-      // Reset form
       setTitle("");
       setAuthor("");
+      setPrice("");
       setDescription("");
       setImage(null);
       Alert.alert("✅ Book added successfully!");
@@ -107,7 +102,6 @@ export default function AddBookScreen({ navigation }) {
 
   return (
     <ScrollView style={styles.container}>
-      {/* ✅ Reusable header */}
       <Header
         title="Add New Book"
         showBack={true}
@@ -128,6 +122,15 @@ export default function AddBookScreen({ navigation }) {
           placeholder="Enter author name"
           value={author}
           onChangeText={setAuthor}
+          style={styles.input}
+        />
+
+        <Text style={styles.label}>Price (in ₹)</Text>
+        <TextInput
+          placeholder="Enter price for renting"
+          value={price}
+          onChangeText={setPrice}
+          keyboardType="numeric"
           style={styles.input}
         />
 

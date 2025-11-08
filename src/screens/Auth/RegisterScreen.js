@@ -1,39 +1,103 @@
 import React, { useState } from "react";
-import { View, TextInput, Button, Alert } from "react-native";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { View, TextInput, Button, Alert, ActivityIndicator, StyleSheet } from "react-native";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { setDoc, doc } from "firebase/firestore";
 import { auth, db } from "../../services/firebaseConfig";
 
-export default function RegisterScreen() {
+export default function RegisterScreen({ navigation }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
+    if (!name || !email || !password) {
+      Alert.alert("Missing Fields", "Please fill in all fields");
+      return;
+    }
+
     try {
+      setLoading(true);
+
+      // ✅ Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // ✅ Create user profile in Firestore
+      // ✅ Update Firebase Auth display name
+      await updateProfile(user, { displayName: name });
+
+      // ✅ Save user data to Firestore
       await setDoc(doc(db, "users", user.uid), {
         name,
         email,
         createdAt: new Date().toISOString(),
       });
 
-      Alert.alert("✅ Registration Successful!", "You can now log in.");
+      Alert.alert("🎉 Registration Successful!", "Welcome to Book Rental App!");
+
+      // ✅ Navigate instantly to Home
+      // Since user is already signed in, MainNavigator will switch automatically,
+      // but we can force it to happen immediately.
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Home" }], // Ensure this matches your AppNavigator tab name
+      });
     } catch (error) {
       console.error("❌ Registration error:", error);
       Alert.alert("Error", error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <View style={{ padding: 20 }}>
-      <TextInput placeholder="Name" value={name} onChangeText={setName} style={{ borderWidth: 1, marginBottom: 10, padding: 10 }} />
-      <TextInput placeholder="Email" value={email} onChangeText={setEmail} style={{ borderWidth: 1, marginBottom: 10, padding: 10 }} />
-      <TextInput placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry style={{ borderWidth: 1, marginBottom: 10, padding: 10 }} />
-      <Button title="Register" onPress={handleRegister} />
+    <View style={styles.container}>
+      <TextInput
+        placeholder="Full Name"
+        value={name}
+        onChangeText={setName}
+        style={styles.input}
+      />
+      <TextInput
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        style={styles.input}
+      />
+      <TextInput
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        style={styles.input}
+      />
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#2196F3" style={{ marginVertical: 20 }} />
+      ) : (
+        <Button title="Register" onPress={handleRegister} />
+      )}
+
+      <View style={{ marginTop: 15 }}>
+        <Button
+          title="Already have an account? Log In"
+          onPress={() => navigation.replace("Login")}
+          color="#2196F3"
+        />
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: "#f5f5f5", justifyContent: "center" },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    backgroundColor: "#fff",
+  },
+});

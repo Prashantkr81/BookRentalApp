@@ -1,3 +1,4 @@
+// src/screens/SearchScreen.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -19,7 +20,6 @@ export default function SearchScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredBooks, setFilteredBooks] = useState([]);
 
-  // 📥 Fetch all books once
   useEffect(() => {
     const fetchBooks = async () => {
       try {
@@ -37,7 +37,6 @@ export default function SearchScreen({ navigation }) {
     fetchBooks();
   }, []);
 
-  // 🔍 Filter books when user types
   useEffect(() => {
     const query = searchQuery.toLowerCase();
     const results = books.filter(
@@ -49,61 +48,65 @@ export default function SearchScreen({ navigation }) {
   }, [searchQuery, books]);
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
-        {/* ✅ Reusable Header */}
-        <Header
-          title="Search Books"
-          showBack={true}
-          onBackPress={() => navigation.goBack()}
-        />
+    <View style={styles.container}>
+      <Header
+        title="Search Books"
+        showBack={true}
+        onBackPress={() => navigation.goBack()}
+      />
 
-        {/* 🔎 Search Input */}
-        <TextInput
-          style={styles.searchBar}
-          placeholder="Search by title or author..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+      <TextInput
+        style={styles.searchBar}
+        placeholder="Search by title or author..."
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        autoFocus={true}
+      />
 
-        {/* 📚 Results */}
-        {filteredBooks.length === 0 ? (
-          <Text style={styles.noResult}>No books found</Text>
-        ) : (
-          <FlatList
-            data={filteredBooks}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() =>
-                  navigation.navigate("BookDetails", { book: item })
-                } // optional, if BookDetailsScreen exists
-              >
-                <Image
-                  source={{
-                    uri:
-                      item.image ||
-                      "https://cdn-icons-png.flaticon.com/512/2232/2232688.png",
-                  }}
-                  style={styles.image}
-                />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.title} numberOfLines={1}>
-                    {item.title}
-                  </Text>
-                  <Text style={styles.author}>by {item.author}</Text>
-                  <Text style={styles.available}>
-                    {item.isAvailable ? "✅ Available" : "❌ Rented"}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            )}
-          />
-        )}
-      </View>
-    </TouchableWithoutFeedback>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={{ flex: 1 }}>
+          {filteredBooks.length === 0 ? (
+            <Text style={styles.noResult}>No books found</Text>
+          ) : (
+            <FlatList
+              data={filteredBooks}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.card}
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    navigation.getParent()?.navigate("BookDetails", { book: item })
+                  }
+                >
+                  <Image
+                    source={{
+                      uri:
+                        item.image ||
+                        "https://cdn-icons-png.flaticon.com/512/2232/2232688.png",
+                    }}
+                    style={styles.image}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.title} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    <Text style={styles.author}>by {item.author}</Text>
+                    {item.price && (
+                      <Text style={styles.priceText}>₹{item.price}</Text>
+                    )}
+                    <Text style={styles.available}>
+                      {item.isAvailable ? "✅ Available" : "❌ Rented"}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+          )}
+        </View>
+      </TouchableWithoutFeedback>
+    </View>
   );
 }
 
@@ -129,13 +132,18 @@ const styles = StyleSheet.create({
   },
   image: {
     width: 70,
-    height: 100,
-    borderRadius: 5,
-    marginRight: 10,
+    height: 70,
+    borderRadius: 35,
+    marginRight: 12,
     backgroundColor: "#eee",
   },
   title: { fontSize: 16, fontWeight: "bold", color: "#333" },
   author: { color: "#666", marginTop: 2 },
   available: { fontSize: 12, color: "#2196F3", marginTop: 5 },
   noResult: { textAlign: "center", marginTop: 50, color: "#999" },
+  priceText: {
+    fontWeight: "bold",
+    color: "#2196F3",
+    marginTop: 3,
+  },
 });

@@ -1,33 +1,54 @@
+// src/screens/CartScreen.js
 import React, { useContext } from "react";
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+} from "react-native";
 import { CartContext } from "../context/CartContext";
 import Header from "../components/Header";
 
 export default function CartScreen({ navigation }) {
   const { cart, removeFromCart, clearCart } = useContext(CartContext);
 
-  const handleCheckout = () => {
+  // 🧮 Calculate total price
+  const total = cart.reduce((sum, item) => sum + (item.price || 0), 0);
+
+  // 🧾 Proceed to Checkout
+  const handleProceedToCheckout = () => {
     if (cart.length === 0) {
       Alert.alert("Your cart is empty", "Add books to your cart first!");
       return;
     }
-    Alert.alert("✅ Checkout", "Feature coming soon! You'll be able to rent all these books.");
+
+    // ✅ Navigate to CheckoutScreen and pass cart data
+    navigation.navigate("Checkout", { cart });
   };
 
   const renderItem = ({ item }) => (
     <View style={styles.item}>
       <Image
         source={{
-          uri: item.image || "https://via.placeholder.com/150x200.png?text=No+Image",
+          uri:
+            item.image ||
+            "https://cdn-icons-png.flaticon.com/512/2232/2232688.png",
         }}
         style={styles.image}
       />
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.author}>by {item.author}</Text>
+        <Text style={styles.price}>₹{item.price || 0}</Text>
       </View>
 
-      <TouchableOpacity onPress={() => removeFromCart(item.id)} style={styles.removeButton}>
+      <TouchableOpacity
+        onPress={() => removeFromCart(item.id)}
+        style={styles.removeButton}
+      >
         <Text style={styles.removeText}>✖</Text>
       </TouchableOpacity>
     </View>
@@ -69,9 +90,18 @@ export default function CartScreen({ navigation }) {
             contentContainerStyle={{ padding: 10 }}
           />
 
-          <TouchableOpacity style={styles.checkoutButton} onPress={handleCheckout}>
-            <Text style={styles.checkoutText}>Proceed to Rent ({cart.length})</Text>
-          </TouchableOpacity>
+          {/* 💰 Total + Proceed */}
+          <View style={styles.summary}>
+            <Text style={styles.totalText}>Total: ₹{total}</Text>
+            <TouchableOpacity
+              style={styles.checkoutButton}
+              onPress={handleProceedToCheckout}
+            >
+              <Text style={styles.checkoutText}>
+                Proceed to Rent ({cart.length})
+              </Text>
+            </TouchableOpacity>
+          </View>
         </>
       )}
     </View>
@@ -92,6 +122,7 @@ const styles = StyleSheet.create({
   image: { width: 70, height: 100, borderRadius: 6, marginRight: 10 },
   title: { fontSize: 16, fontWeight: "bold", color: "#333" },
   author: { fontSize: 14, color: "#666" },
+  price: { color: "#2196F3", fontWeight: "bold", marginTop: 4 },
   removeButton: {
     backgroundColor: "#f44336",
     borderRadius: 20,
@@ -109,12 +140,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   browseText: { color: "#fff", fontWeight: "bold" },
+  summary: {
+    backgroundColor: "#fff",
+    padding: 15,
+    borderTopWidth: 0.5,
+    borderColor: "#ddd",
+  },
+  totalText: { fontSize: 18, fontWeight: "bold", color: "#333", marginBottom: 10 },
   checkoutButton: {
     backgroundColor: "#2196F3",
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: "center",
-    margin: 15,
   },
   checkoutText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
 });
