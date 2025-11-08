@@ -1,5 +1,14 @@
 import React, { useState } from "react";
-import { View, TextInput, Button, Alert, ActivityIndicator, StyleSheet } from "react-native";
+import {
+  View,
+  TextInput,
+  Button,
+  Alert,
+  ActivityIndicator,
+  StyleSheet,
+  Image,
+  Text,
+} from "react-native";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { setDoc, doc } from "firebase/firestore";
 import { auth, db } from "../../services/firebaseConfig";
@@ -36,11 +45,9 @@ export default function RegisterScreen({ navigation }) {
       Alert.alert("🎉 Registration Successful!", "Welcome to Book Rental App!");
 
       // ✅ Navigate instantly to Home
-      // Since user is already signed in, MainNavigator will switch automatically,
-      // but we can force it to happen immediately.
       navigation.reset({
         index: 0,
-        routes: [{ name: "Home" }], // Ensure this matches your AppNavigator tab name
+        routes: [{ name: "Home" }],
       });
     } catch (error) {
       console.error("❌ Registration error:", error);
@@ -52,6 +59,13 @@ export default function RegisterScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      {/* 📱 App Logo */}
+      <Image
+        source={require("../../assets/images/app_logo.png")} // ✅ your logo
+        style={styles.logo}
+      />
+      <Text style={styles.title}>Create Your Account</Text>
+
       <TextInput
         placeholder="Full Name"
         value={name}
@@ -92,6 +106,20 @@ export default function RegisterScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#f5f5f5", justifyContent: "center" },
+  logo: {
+    width: 120,
+    height: 120,
+    alignSelf: "center",
+    marginBottom: 20,
+    resizeMode: "contain",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    textAlign: "center",
+    marginBottom: 25,
+  },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",

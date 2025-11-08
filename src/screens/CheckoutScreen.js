@@ -1,4 +1,3 @@
-// src/screens/CheckoutScreen.js
 import React, { useContext, useState } from "react";
 import {
   View,
@@ -13,10 +12,12 @@ import {
   Platform,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { updateDoc, doc, addDoc, collection } from "firebase/firestore";
+import { updateDoc, doc, addDoc, collection, getDoc } from "firebase/firestore";
 import { db, auth } from "../services/firebaseConfig";
 import { CartContext } from "../context/CartContext";
 import Header from "../components/Header";
+import { Timestamp } from "firebase/firestore";
+
 
 export default function CheckoutScreen({ route, navigation }) {
   const { cart } = route.params;
@@ -37,7 +38,7 @@ export default function CheckoutScreen({ route, navigation }) {
     setDate(currentDate);
   };
 
-  // ✅ Confirm Checkout
+  // ✅ Confirm Checkout with Notifications
   const handleConfirmCheckout = async () => {
     if (!user) {
       Alert.alert("Login Required", "Please log in to complete checkout.");
@@ -54,6 +55,13 @@ export default function CheckoutScreen({ route, navigation }) {
 
       for (let book of cart) {
         const bookRef = doc(db, "books", book.id);
+        const bookSnap = await getDoc(bookRef);
+        if (!bookSnap.exists()) continue;
+
+        const bookData = bookSnap.data();
+
+        // Skip if already rented
+        if (!bookData.isAvailable) continue;
 
         // Update book status to rented
         await updateDoc(bookRef, {
@@ -62,9 +70,10 @@ export default function CheckoutScreen({ route, navigation }) {
           rentedAt: new Date().toISOString(),
         });
 
-        // Save rental record with delivery info
+        // Save rental record
         await addDoc(collection(db, "rentals"), {
           userId: user.uid,
+          ownerId: book.ownerId,
           bookId: book.id,
           title: book.title,
           author: book.author,
@@ -76,6 +85,32 @@ export default function CheckoutScreen({ route, navigation }) {
           paymentMethod,
           status: "rented",
         });
+
+        // 🔔 Create Notifications for Owner and Renter
+        try {
+          const renterName = user.displayName || "A renter";
+          const ownerRef = doc(db, "users", book.ownerId);
+          const ownerSnap = await getDoc(ownerRef);
+          const ownerName = ownerSnap.exists() ? ownerSnap.data().name : "Owner";
+
+          // 📨 Notify the book owner
+          await addDoc(collection(db, "notifications"), {
+            userId: book.ownerId,
+            message: `📘 Your book "${book.title}" was rented by ${renterName}. Deliver to: ${address}.`,
+            timestamp: Timestamp.now(),
+            read: false,
+          });
+
+          // 📨 Notify the renter
+          await addDoc(collection(db, "notifications"), {
+            userId: user.uid,
+            message: `⏰ You rented "${book.title}". Please return it by ${date.toDateString()}.`,
+            timestamp: Timestamp.now(),
+            read: false,
+          });
+        } catch (notifError) {
+          console.error("Notification creation error:", notifError);
+        }
       }
 
       clearCart();
@@ -137,9 +172,7 @@ export default function CheckoutScreen({ route, navigation }) {
               style={styles.dateButton}
               onPress={() => setShowDatePicker(true)}
             >
-              <Text style={styles.dateText}>
-                {date.toDateString()}
-              </Text>
+              <Text style={styles.dateText}>{date.toDateString()}</Text>
             </TouchableOpacity>
 
             {showDatePicker && (
