@@ -8,6 +8,7 @@ import AppNavigator from "./AppNavigator";
 import BookDetailScreen from "../screens/BookDetailScreen";
 import CartScreen from "../screens/CartScreen";
 import CheckoutScreen from "../screens/CheckoutScreen";
+import NotificationScreen from "../screens/NotificationsScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -28,6 +29,7 @@ export default function MainNavigator() {
             <Stack.Screen name="BookDetails" component={BookDetailScreen} />
             <Stack.Screen name="Cart" component={CartScreen} />
             <Stack.Screen name="Checkout" component={CheckoutScreen} />
+            <Stack.Screen name="NotificationScreen" component={NotificationScreen} />
           </>
         )}
       </Stack.Navigator>

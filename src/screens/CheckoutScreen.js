@@ -12,12 +12,10 @@ import {
   Platform,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { updateDoc, doc, addDoc, collection, getDoc } from "firebase/firestore";
+import { updateDoc, doc, addDoc, collection, getDoc, Timestamp } from "firebase/firestore";
 import { db, auth } from "../services/firebaseConfig";
 import { CartContext } from "../context/CartContext";
 import Header from "../components/Header";
-import { Timestamp } from "firebase/firestore";
-
 
 export default function CheckoutScreen({ route, navigation }) {
   const { cart } = route.params;
@@ -31,14 +29,12 @@ export default function CheckoutScreen({ route, navigation }) {
 
   const total = cart.reduce((sum, book) => sum + (book.price || 0), 0);
 
-  // 📅 Date Picker Change
   const onChangeDate = (event, selectedDate) => {
     const currentDate = selectedDate || date;
     setShowDatePicker(Platform.OS === "ios");
     setDate(currentDate);
   };
 
-  // ✅ Confirm Checkout with Notifications
   const handleConfirmCheckout = async () => {
     if (!user) {
       Alert.alert("Login Required", "Please log in to complete checkout.");
@@ -60,10 +56,9 @@ export default function CheckoutScreen({ route, navigation }) {
 
         const bookData = bookSnap.data();
 
-        // Skip if already rented
         if (!bookData.isAvailable) continue;
 
-        // Update book status to rented
+        // Update book to rented
         await updateDoc(bookRef, {
           isAvailable: false,
           rentedBy: user.uid,
@@ -86,31 +81,27 @@ export default function CheckoutScreen({ route, navigation }) {
           status: "rented",
         });
 
-        // 🔔 Create Notifications for Owner and Renter
-        try {
-          const renterName = user.displayName || "A renter";
-          const ownerRef = doc(db, "users", book.ownerId);
-          const ownerSnap = await getDoc(ownerRef);
-          const ownerName = ownerSnap.exists() ? ownerSnap.data().name : "Owner";
+        // Notifications — centralized here ✅
+        const renterName = user.displayName || "A renter";
+        const ownerRef = doc(db, "users", book.ownerId);
+        const ownerSnap = await getDoc(ownerRef);
+        const ownerName = ownerSnap.exists() ? ownerSnap.data().name : "Owner";
 
-          // 📨 Notify the book owner
-          await addDoc(collection(db, "notifications"), {
-            userId: book.ownerId,
-            message: `📘 Your book "${book.title}" was rented by ${renterName}. Deliver to: ${address}.`,
-            timestamp: Timestamp.now(),
-            read: false,
-          });
+        // Notify Owner
+        await addDoc(collection(db, "notifications"), {
+          userId: book.ownerId,
+          message: `📘 Your book "${book.title}" was rented by ${renterName}. Deliver to: ${address}.`,
+          timestamp: Timestamp.now(),
+          read: false,
+        });
 
-          // 📨 Notify the renter
-          await addDoc(collection(db, "notifications"), {
-            userId: user.uid,
-            message: `⏰ You rented "${book.title}". Please return it by ${date.toDateString()}.`,
-            timestamp: Timestamp.now(),
-            read: false,
-          });
-        } catch (notifError) {
-          console.error("Notification creation error:", notifError);
-        }
+        // Notify Renter
+        await addDoc(collection(db, "notifications"), {
+          userId: user.uid,
+          message: `⏰ You rented "${book.title}". Please return it by ${date.toDateString()}.`,
+          timestamp: Timestamp.now(),
+          read: false,
+        });
       }
 
       clearCart();
@@ -126,25 +117,17 @@ export default function CheckoutScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <Header
-        title="Checkout"
-        showBack={true}
-        onBackPress={() => navigation.goBack()}
-      />
+      <Header title="Checkout" showBack={true} onBackPress={() => navigation.goBack()} />
 
       <FlatList
         ListHeaderComponent={
           <>
             <Text style={styles.heading}>Confirm Rental</Text>
-
-            {/* 📦 Book List */}
             {cart.map((item) => (
               <View key={item.id} style={styles.item}>
                 <Image
                   source={{
-                    uri:
-                      item.image ||
-                      "https://cdn-icons-png.flaticon.com/512/2232/2232688.png",
+                    uri: item.image || "https://cdn-icons-png.flaticon.com/512/2232/2232688.png",
                   }}
                   style={styles.image}
                 />
@@ -156,7 +139,6 @@ export default function CheckoutScreen({ route, navigation }) {
               </View>
             ))}
 
-            {/* 🏠 Address */}
             <Text style={styles.label}>Delivery Address</Text>
             <TextInput
               style={styles.input}
@@ -166,12 +148,8 @@ export default function CheckoutScreen({ route, navigation }) {
               multiline
             />
 
-            {/* 📅 Return Date */}
             <Text style={styles.label}>Expected Return Date</Text>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setShowDatePicker(true)}
-            >
+            <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
               <Text style={styles.dateText}>{date.toDateString()}</Text>
             </TouchableOpacity>
 
@@ -185,7 +163,6 @@ export default function CheckoutScreen({ route, navigation }) {
               />
             )}
 
-            {/* 💳 Payment Method */}
             <Text style={styles.label}>Payment Method</Text>
             <View style={styles.paymentContainer}>
               {["Cash on Delivery", "UPI", "Credit/Debit Card"].map((method) => (
@@ -235,12 +212,7 @@ export default function CheckoutScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f5f5f5" },
-  heading: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginVertical: 10,
-    marginHorizontal: 15,
-  },
+  heading: { fontSize: 20, fontWeight: "bold", margin: 15 },
   item: {
     flexDirection: "row",
     backgroundColor: "#fff",
@@ -251,22 +223,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     elevation: 2,
   },
-  image: {
-    width: 70,
-    height: 100,
-    borderRadius: 6,
-    marginRight: 10,
-  },
+  image: { width: 70, height: 100, borderRadius: 6, marginRight: 10 },
   title: { fontSize: 16, fontWeight: "bold", color: "#333" },
-  author: { color: "#666", marginBottom: 4 },
+  author: { color: "#666" },
   price: { color: "#2196F3", fontWeight: "bold" },
-  label: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginHorizontal: 15,
-    marginTop: 15,
-    color: "#333",
-  },
+  label: { fontSize: 16, fontWeight: "bold", marginHorizontal: 15, marginTop: 15, color: "#333" },
   input: {
     backgroundColor: "#fff",
     borderRadius: 8,
@@ -300,22 +261,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
   },
-  selectedPayment: {
-    backgroundColor: "#2196F3",
-    borderColor: "#2196F3",
-  },
-  footer: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderTopWidth: 0.5,
-    borderColor: "#ddd",
-  },
-  totalText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
-  },
+  selectedPayment: { backgroundColor: "#2196F3", borderColor: "#2196F3" },
+  footer: { backgroundColor: "#fff", padding: 15, borderTopWidth: 0.5, borderColor: "#ddd" },
+  totalText: { fontSize: 18, fontWeight: "bold", color: "#333", marginBottom: 10 },
   confirmButton: {
     backgroundColor: "#2196F3",
     paddingVertical: 14,

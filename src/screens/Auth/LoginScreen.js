@@ -8,8 +8,9 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
+  TouchableOpacity,
 } from "react-native";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../services/firebaseConfig";
 import { AuthContext } from "../../context/AuthContext";
 
@@ -36,11 +37,28 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      Alert.alert("Missing Email", "Please enter your email to reset password");
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      Alert.alert(
+        "Password Reset Link Sent",
+        "A password reset link has been sent to your email address."
+      );
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* 📱 App Logo */}
       <Image
-        source={require("../../assets/images/app_logo.png")} // ✅ same logo
+        source={require("../../assets/images/app_logo.png")}
         style={styles.logo}
       />
       <Text style={styles.title}>Welcome Back</Text>
@@ -59,6 +77,11 @@ export default function LoginScreen({ navigation }) {
         onChangeText={setPassword}
         style={styles.input}
       />
+
+      {/* 🔗 Forgot Password */}
+      <TouchableOpacity onPress={handleForgotPassword}>
+        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+      </TouchableOpacity>
 
       {loading ? (
         <ActivityIndicator size="large" color="#2196F3" style={{ marginVertical: 20 }} />
@@ -97,11 +120,17 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#6d6d6dff",
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
     backgroundColor: "#fff",
+  },
+  forgotPasswordText: {
+    color: "#2196F3",
+    textAlign: "right",
+    marginBottom: 20,
+    fontWeight: "500",
   },
   linkText: {
     textAlign: "center",

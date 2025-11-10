@@ -1,5 +1,4 @@
-// src/screens/ProfileScreen.js
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,6 +9,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import {
   collection,
@@ -31,56 +31,66 @@ export default function ProfileScreen({ navigation }) {
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(null);
-  const { setUser } = useContext(AuthContext); // ✅ To clear local session
+  const [refreshing, setRefreshing] = useState(false); // 🔹 NEW STATE
+  const { setUser } = useContext(AuthContext);
   const user = auth.currentUser;
 
-  // 🔹 Fetch data
-  useEffect(() => {
+  // 🔹 Fetch data (moved into a function for reuse)
+  const fetchUserData = useCallback(async () => {
     if (!user) return;
-    const fetchUserData = async () => {
-      try {
-        // Get user name
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          setUserName(userSnap.data().name || user.displayName || "Anonymous");
-        } else {
-          setUserName(user.displayName || "User");
-        }
+    try {
+      if (!refreshing) setLoading(true);
 
-        // Fetch listed books (owned by user)
-        const listedQuery = query(
-          collection(db, "books"),
-          where("ownerId", "==", user.uid)
-        );
-        const listedSnapshot = await getDocs(listedQuery);
-        const listed = listedSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        // Fetch books rented by this user
-        const rentedQuery = query(
-          collection(db, "books"),
-          where("rentedBy", "==", user.uid)
-        );
-        const rentedSnapshot = await getDocs(rentedQuery);
-        const rented = rentedSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-
-        setListedBooks(listed);
-        setRentedBooks(rented);
-      } catch (error) {
-        console.error("Error loading profile data:", error);
-      } finally {
-        setLoading(false);
+      // Get user name
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        setUserName(userSnap.data().name || user.displayName || "Anonymous");
+      } else {
+        setUserName(user.displayName || "User");
       }
-    };
 
+      // Fetch listed books
+      const listedQuery = query(
+        collection(db, "books"),
+        where("ownerId", "==", user.uid)
+      );
+      const listedSnapshot = await getDocs(listedQuery);
+      const listed = listedSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Fetch rented books
+      const rentedQuery = query(
+        collection(db, "books"),
+        where("rentedBy", "==", user.uid)
+      );
+      const rentedSnapshot = await getDocs(rentedQuery);
+      const rented = rentedSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setListedBooks(listed);
+      setRentedBooks(rented);
+    } catch (error) {
+      console.error("Error loading profile data:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false); // ✅ stop refreshing
+    }
+  }, [user, refreshing]);
+
+  useEffect(() => {
     fetchUserData();
-  }, [user, processing]);
+  }, [fetchUserData, processing]);
+
+  // ✅ Pull to refresh handler
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchUserData();
+  }, [fetchUserData]);
 
   // ✅ Owner marks a book as returned
   const handleMarkReturned = async (book) => {
@@ -132,12 +142,12 @@ export default function ProfileScreen({ navigation }) {
   // ✅ Logout Function
   const handleLogout = async () => {
     try {
-      await signOut(auth); // Firebase logout
-      setUser(null); // Clear user context
+      await signOut(auth);
+      setUser(null);
       Alert.alert("Logged Out", "You have been logged out successfully.");
       navigation.reset({
         index: 0,
-        routes: [{ name: "Login" }], // Redirect to login screen
+        routes: [{ name: "Login" }],
       });
     } catch (error) {
       console.error("Logout Error:", error);
@@ -145,7 +155,7 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#2196F3" />
@@ -155,7 +165,12 @@ export default function ProfileScreen({ navigation }) {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> // ✅ ADDED
+      }
+    >
       <Header
         title="My Profile"
         rightIcon="notifications-outline"
@@ -191,7 +206,6 @@ export default function ProfileScreen({ navigation }) {
               <Image source={{ uri: item.image }} style={styles.thumbnail} />
               <Text style={styles.bookTitle}>{item.title}</Text>
               <Text style={styles.bookAuthor}>by {item.author}</Text>
-
               <Text
                 style={{
                   color: item.isAvailable ? "#4CAF50" : "#F44336",
@@ -248,7 +262,7 @@ export default function ProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5", padding: 10 },
+  container: { flex: 1, backgroundColor: "#f5f5f5" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: { alignItems: "center", marginVertical: 20 },
   profileImage: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
