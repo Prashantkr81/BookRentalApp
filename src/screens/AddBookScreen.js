@@ -12,30 +12,37 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { addDoc, collection } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage, auth } from "../services/firebaseConfig";
+import { db, auth } from "../services/firebaseConfig";
 import Header from "../components/Header";
 
 export default function AddBookScreen({ navigation }) {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
-  const [price, setPrice] = useState(""); // 💰 New
+  const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
   const [uploading, setUploading] = useState(false);
+
+  // ⭐ Your Cloudinary Config (ADD YOUR VALUES)
+  const CLOUD_NAME = "bookrental-81";
+  const UPLOAD_PRESET = "my_bookapp_preset"; 
+
 
   useEffect(() => {
     (async () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
         Alert.alert(
-          "Permission required",
-          "Please allow access to your gallery to upload book images."
+          "Permission Required",
+          "Allow access to gallery to upload book images."
         );
       }
     })();
   }, []);
 
+  // ----------------------------------------------------------
+  // 📸 PICK IMAGE
+  // ----------------------------------------------------------
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -49,29 +56,67 @@ export default function AddBookScreen({ navigation }) {
         setImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error("ImagePicker error:", error);
-      Alert.alert("Error selecting image");
+      console.error("ImagePicker Error:", error);
+      Alert.alert("Error selecting image.");
     }
   };
 
+  // ----------------------------------------------------------
+  // ☁ UPLOAD IMAGE TO CLOUDINARY
+  // ----------------------------------------------------------
+  const uploadToCloudinary = async (localUri) => {
+    const formData = new FormData();
+    formData.append("file", {
+      uri: localUri,
+      type: "image/jpeg",
+      name: "book.jpg",
+    });
+    formData.append("upload_preset", UPLOAD_PRESET);
+    formData.append("cloud_name", CLOUD_NAME);
+
+    try {
+      let response = await fetch(
+        `https://api.cloudinary.com/v1_1/bookrental-81/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!data.secure_url) {
+        throw new Error("Cloudinary upload failed");
+      }
+
+      return data.secure_url;
+    } catch (error) {
+      console.error("Cloudinary Upload Error:", error);
+      Alert.alert("Image upload failed.");
+      return null;
+    }
+  };
+
+  // ----------------------------------------------------------
+  // 📘 ADD BOOK
+  // ----------------------------------------------------------
   const uploadBook = async () => {
     if (!title.trim() || !author.trim() || !price.trim()) {
-      Alert.alert("Missing info", "Please fill in title, author, and price fields.");
+      Alert.alert("Missing Fields", "Please enter title, author, and price.");
       return;
     }
 
-    try {
-      setUploading(true);
-      let imageUrl;
+    setUploading(true);
 
+    try {
+      // Default image URL if user doesn’t upload one
+      let imageUrl =
+        "https://cdn-icons-png.flaticon.com/512/2232/2232688.png";
+
+      // Upload to Cloudinary if image selected
       if (image) {
-        const imageRef = ref(storage, `books/${Date.now()}.jpg`);
-        const response = await fetch(image);
-        const blob = await response.blob();
-        await uploadBytes(imageRef, blob);
-        imageUrl = await getDownloadURL(imageRef);
-      } else {
-        imageUrl = "https://cdn-icons-png.flaticon.com/512/2232/2232688.png";
+        const uploadedUrl = await uploadToCloudinary(image);
+        if (uploadedUrl) imageUrl = uploadedUrl;
       }
 
       await addDoc(collection(db, "books"), {
@@ -86,15 +131,18 @@ export default function AddBookScreen({ navigation }) {
         createdAt: new Date().toISOString(),
       });
 
+      // Reset fields
       setTitle("");
       setAuthor("");
       setPrice("");
       setDescription("");
       setImage(null);
+
       Alert.alert("✅ Book added successfully!");
+      navigation.goBack();
     } catch (error) {
-      console.error("Upload Error:", error);
-      Alert.alert("❌ Failed to add book", error.message);
+      console.error("Add Book Error:", error);
+      Alert.alert("❌ Failed to add book");
     } finally {
       setUploading(false);
     }
@@ -143,14 +191,9 @@ export default function AddBookScreen({ navigation }) {
           style={[styles.input, { height: 90 }]}
         />
 
-        <Button title="Select Book Image (optional)" onPress={pickImage} />
+        <Button title="Select Book Image" onPress={pickImage} />
 
-        {image && (
-          <Image
-            source={{ uri: image }}
-            style={styles.imagePreview}
-          />
-        )}
+        {image && <Image source={{ uri: image }} style={styles.imagePreview} />}
 
         {uploading ? (
           <View style={styles.loadingContainer}>
@@ -165,6 +208,9 @@ export default function AddBookScreen({ navigation }) {
   );
 }
 
+// ----------------------------------------------------------
+// 🎨 STYLES
+// ----------------------------------------------------------
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f5f5f5" },
   formContainer: { padding: 20 },
