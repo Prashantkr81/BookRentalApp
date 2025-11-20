@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
+
 import {
   collection,
   query,
@@ -19,109 +20,92 @@ import {
   doc,
   getDoc,
   updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
+
 import { signOut } from "firebase/auth";
 import { auth, db } from "../services/firebaseConfig";
 import Header from "../components/Header";
 import { AuthContext } from "../context/AuthContext";
+import Icon from "react-native-vector-icons/MaterialIcons";
 
 export default function ProfileScreen({ navigation }) {
   const [listedBooks, setListedBooks] = useState([]);
   const [rentedBooks, setRentedBooks] = useState([]);
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(null);
-  const [refreshing, setRefreshing] = useState(false); // 🔹 NEW STATE
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [editMode, setEditMode] = useState(false);
+
   const { setUser } = useContext(AuthContext);
   const user = auth.currentUser;
 
-  // 🔹 Fetch data (moved into a function for reuse)
+  // ----------------------------------------------------------------------------
+  // FETCH PROFILE DATA
+  // ----------------------------------------------------------------------------
   const fetchUserData = useCallback(async () => {
     if (!user) return;
+
     try {
       if (!refreshing) setLoading(true);
 
-      // Get user name
+      // USER NAME
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        setUserName(userSnap.data().name || user.displayName || "Anonymous");
-      } else {
-        setUserName(user.displayName || "User");
-      }
+      setUserName(
+        userSnap.exists()
+          ? userSnap.data().name || user.displayName || "Anonymous"
+          : user.displayName || "User"
+      );
 
-      // Fetch listed books
+      // LISTED BOOKS
       const listedQuery = query(
         collection(db, "books"),
         where("ownerId", "==", user.uid)
       );
-      const listedSnapshot = await getDocs(listedQuery);
-      const listed = listedSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
 
-      // Fetch rented books
+      const listedSnapshot = await getDocs(listedQuery);
+      setListedBooks(
+        listedSnapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
+      );
+
+      // RENTED BOOKS
       const rentedQuery = query(
         collection(db, "books"),
         where("rentedBy", "==", user.uid)
       );
-      const rentedSnapshot = await getDocs(rentedQuery);
-      const rented = rentedSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
 
-      setListedBooks(listed);
-      setRentedBooks(rented);
+      const rentedSnapshot = await getDocs(rentedQuery);
+      setRentedBooks(
+        rentedSnapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
+      );
     } catch (error) {
-      console.error("Error loading profile data:", error);
+      console.error("Error loading profile:", error);
     } finally {
       setLoading(false);
-      setRefreshing(false); // ✅ stop refreshing
+      setRefreshing(false);
     }
   }, [user, refreshing]);
 
   useEffect(() => {
     fetchUserData();
-  }, [fetchUserData, processing]);
-
-  // ✅ Pull to refresh handler
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchUserData();
   }, [fetchUserData]);
 
-  // ✅ Owner marks a book as returned
+  // ----------------------------------------------------------------------------
+  // REFRESH CONTROL
+  // ----------------------------------------------------------------------------
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchUserData();
+  };
+
+  // ----------------------------------------------------------------------------
+  // MARK RETURNED
+  // ----------------------------------------------------------------------------
   const handleMarkReturned = async (book) => {
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        Alert.alert("Login Required", "Please log in again.");
-        return;
-      }
-
       const bookRef = doc(db, "books", book.id);
-      const bookSnap = await getDoc(bookRef);
-
-      if (!bookSnap.exists()) {
-        Alert.alert("❌ Error", "Book not found in database.");
-        return;
-      }
-
-      const bookData = bookSnap.data();
-
-      if (bookData.ownerId !== currentUser.uid) {
-        Alert.alert("⚠️ Permission Denied", "Only the owner can mark this book as returned.");
-        return;
-      }
-
-      if (bookData.isAvailable && !bookData.rentedBy) {
-        Alert.alert("ℹ️ Info", "This book is already available.");
-        return;
-      }
-
-      setProcessing(book.id);
 
       await updateDoc(bookRef, {
         isAvailable: true,
@@ -130,54 +114,69 @@ export default function ProfileScreen({ navigation }) {
         lastReturnedAt: new Date().toISOString(),
       });
 
-      Alert.alert("✅ Success", `"${book.title}" is now available again.`);
-      setProcessing(null);
+      Alert.alert("Success", `"${book.title}" is now available.`);
+      fetchUserData();
     } catch (error) {
-      console.error("Error marking returned:", error);
-      Alert.alert("❌ Error", error.message || "Failed to mark as returned.");
-      setProcessing(null);
+      console.error("Return error:", error);
     }
   };
 
-  // ✅ Logout Function
+  // ----------------------------------------------------------------------------
+  // DELETE BOOK
+  // ----------------------------------------------------------------------------
+  const handleDeleteBook = async (bookId) => 
+    {
+    Alert.alert("Delete Book?", "This action cannot be undone.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteDoc(doc(db, "books", bookId));
+            Alert.alert("Deleted", "Book removed successfully.");
+            fetchUserData();
+          } catch (error) {
+            console.error("Delete error:", error);
+            Alert.alert("Error", "Failed to delete book.");
+          }
+        },
+      },
+    ]);
+  };
+
+  // ----------------------------------------------------------------------------
+  // LOGOUT
+  // ----------------------------------------------------------------------------
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      setUser(null);
-      Alert.alert("Logged Out", "You have been logged out successfully.");
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Login" }],
-      });
-    } catch (error) {
-      console.error("Logout Error:", error);
-      Alert.alert("Error", "Failed to logout. Please try again.");
-    }
+    await signOut(auth);
+    setUser(null);
+    navigation.reset({ index: 0, routes: [{ name: "Login" }] });
   };
 
+  // ----------------------------------------------------------------------------
+  // LOADING SCREEN
+  // ----------------------------------------------------------------------------
   if (loading && !refreshing) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={{ marginTop: 10 }}>Loading profile...</Text>
+        <Text>Loading profile...</Text>
       </View>
     );
   }
 
+  // ----------------------------------------------------------------------------
+  // UI
+  // ----------------------------------------------------------------------------
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> // ✅ ADDED
-      }
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Header
-        title="My Profile"
-        rightIcon="notifications-outline"
-        onRightPress={() => console.log("Notifications pressed")}
-      />
+      <Header title="My Profile" />
 
-      {/* 👤 User Info */}
+      {/* USER PROFILE */}
       <View style={styles.header}>
         <Image
           source={{
@@ -191,40 +190,97 @@ export default function ProfileScreen({ navigation }) {
         <Text style={styles.email}>{user?.email}</Text>
       </View>
 
-      {/* 📚 Books Listed by User */}
-      <Text style={styles.sectionTitle}>📚 Books You Listed</Text>
+      {/* LISTED BOOKS HEADER */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>📚 Books You Listed</Text>
+
+        <TouchableOpacity onPress={() => setEditMode(!editMode)}>
+          <Text style={styles.editToggle}>{editMode ? "Done" : "Edit"}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* LISTED BOOKS */}
       {listedBooks.length === 0 ? (
         <Text style={styles.emptyText}>You haven’t listed any books yet.</Text>
       ) : (
         <FlatList
           data={listedBooks}
-          keyExtractor={(item) => item.id}
           horizontal
           showsHorizontalScrollIndicator={false}
+          keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <View
+              style={styles.card}
+              onStartShouldSetResponder={() => true}
+            >
               <Image source={{ uri: item.image }} style={styles.thumbnail} />
+
               <Text style={styles.bookTitle}>{item.title}</Text>
               <Text style={styles.bookAuthor}>by {item.author}</Text>
+
               <Text
                 style={{
                   color: item.isAvailable ? "#4CAF50" : "#F44336",
                   fontWeight: "bold",
-                  marginBottom: 6,
                 }}
               >
                 {item.isAvailable ? "Available" : "Rented"}
               </Text>
 
-              {!item.isAvailable && (
+              {/* EDIT + DELETE only in edit mode */}
+              {editMode && (
+                <>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() =>
+                      navigation.navigate("EditBookScreen", { book: item })
+                    }
+                  >
+                    <Icon name="edit" size={20} color="#fff" />
+                    <Text style={styles.actionText}>Edit</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                  disabled={!item.isAvailable}   // 👈 DISABLE PRESS
+                  style={[
+                    styles.actionButton,
+                    {
+                      backgroundColor: item.isAvailable ? "#D9534F" : "#BDBDBD", // 👈 GREY OUT
+                      opacity: item.isAvailable ? 1 : 0.5, // 👈 DIM EFFECT
+                    },
+                  ]}
+                  onPress={() => {
+                    if (!item.isAvailable) {
+                      Alert.alert("Cannot Delete", "Currently rented, cannot be deleted.");
+                      return;
+                    }
+                    handleDeleteBook(item.id);
+                  }}
+                >
+                  <Icon
+                    name="delete"
+                    size={20}
+                    color={item.isAvailable ? "#fff" : "#757575"} // 👈 GREY ICON
+                  />
+                  <Text
+                    style={[
+                      styles.actionText,
+                      { color: item.isAvailable ? "#fff" : "#757575" }, // 👈 GREY TEXT
+                    ]}
+                  >
+                    Delete
+                  </Text>
+                </TouchableOpacity>
+                </>
+              )}
+
+              {/* RETURN BUTTON */}
+              {!item.isAvailable && !editMode && (
                 <TouchableOpacity
                   style={styles.returnButton}
                   onPress={() => handleMarkReturned(item)}
-                  disabled={processing === item.id}
                 >
-                  <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                    {processing === item.id ? "Processing..." : "Mark Returned"}
-                  </Text>
+                  <Text style={{ color: "#fff" }}>Mark Returned</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -232,16 +288,17 @@ export default function ProfileScreen({ navigation }) {
         />
       )}
 
-      {/* 📖 Books Rented by User */}
+      {/* RENTED BOOKS */}
       <Text style={styles.sectionTitle}>📖 Books You Rented</Text>
+
       {rentedBooks.length === 0 ? (
         <Text style={styles.emptyText}>You haven’t rented any books yet.</Text>
       ) : (
         <FlatList
           data={rentedBooks}
-          keyExtractor={(item) => item.id}
           horizontal
           showsHorizontalScrollIndicator={false}
+          keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.card}>
               <Image source={{ uri: item.image }} style={styles.thumbnail} />
@@ -253,7 +310,7 @@ export default function ProfileScreen({ navigation }) {
         />
       )}
 
-      {/* 🚪 Logout Button */}
+      {/* LOGOUT */}
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
@@ -261,47 +318,95 @@ export default function ProfileScreen({ navigation }) {
   );
 }
 
+// ----------------------------------------------------------------------------
+// STYLES
+// ----------------------------------------------------------------------------
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f5f5f5" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
+
   header: { alignItems: "center", marginVertical: 20 },
-  profileImage: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
+  profileImage: { width: 100, height: 100, borderRadius: 50 },
   name: { fontSize: 20, fontWeight: "bold", color: "#333" },
-  email: { fontSize: 14, color: "#666", marginBottom: 10 },
+  email: { color: "#666", marginTop: 4 },
+
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 15,
+    alignItems: "center",
+    marginTop: 15,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    marginVertical: 10,
     color: "#2196F3",
+    marginLeft: 10,
   },
-  emptyText: { fontSize: 14, color: "#888", textAlign: "center", marginBottom: 20 },
+  editToggle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#2196F3",
+    paddingRight: 10,
+  },
+
+  emptyText: {
+    textAlign: "center",
+    fontSize: 14,
+    color: "#777",
+    marginVertical: 10,
+  },
+
   card: {
     backgroundColor: "#fff",
     borderRadius: 10,
-    marginRight: 10,
     padding: 10,
     width: 160,
     alignItems: "center",
-    elevation: 2,
+    margin: 10,
+    elevation: 3,
   },
-  thumbnail: { width: 80, height: 80, borderRadius: 40, marginBottom: 8 },
-  bookTitle: { fontSize: 14, fontWeight: "bold", textAlign: "center", color: "#333" },
-  bookAuthor: { fontSize: 12, color: "#666", textAlign: "center", marginBottom: 6 },
-  returnButton: {
-    backgroundColor: "#2196F3",
-    paddingVertical: 6,
-    paddingHorizontal: 18,
+  thumbnail: {
+    width: 90,
+    height: 90,
     borderRadius: 8,
-    marginTop: 6,
+    marginBottom: 6,
   },
+
+  bookTitle: { fontWeight: "bold", fontSize: 14, textAlign: "center" },
+  bookAuthor: { fontSize: 12, color: "#666", marginBottom: 5 },
+
+  actionButton: {
+    flexDirection: "row",
+    backgroundColor: "#2196F3",
+    padding: 6,
+    borderRadius: 6,
+    width: "100%",
+    justifyContent: "center",
+    marginVertical: 4,
+  },
+  actionText: { color: "#fff", marginLeft: 6, fontWeight: "bold" },
+
+  returnButton: {
+    backgroundColor: "#4CAF50",
+    padding: 6,
+    borderRadius: 6,
+    width: "100%",
+    alignItems: "center",
+    marginTop: 5,
+  },
+
   logoutButton: {
-    backgroundColor: "#F44336",
-    marginTop: 25,
-    marginBottom: 40,
-    alignSelf: "center",
+    backgroundColor: "#000000ff",
     paddingVertical: 12,
-    paddingHorizontal: 40,
+    margin: 30,
+    // marginInline: 650,
     borderRadius: 10,
   },
-  logoutText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  logoutText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
 });
