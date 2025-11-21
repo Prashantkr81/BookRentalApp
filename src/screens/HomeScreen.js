@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  RefreshControl,   // ⭐ Added
 } from "react-native";
 import { collection, getDocs, query, limit, orderBy } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
@@ -18,23 +19,42 @@ export default function HomeScreen({ navigation }) {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch Books
-  useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        const q = query(collection(db, "books"), orderBy("createdAt", "desc"), limit(10));
-        const snapshot = await getDocs(q);
-        const fetched = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        setBooks(fetched);
-      } catch (error) {
-        console.error("Error loading books:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // ⭐ Pull to Refresh state
+  const [refreshing, setRefreshing] = useState(false);
 
+  // Fetch Books
+  const fetchBooks = async () => {
+    try {
+      const q = query(
+        collection(db, "books"),
+        orderBy("createdAt", "desc"),
+        limit(10)
+      );
+
+      const snapshot = await getDocs(q);
+      const fetched = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setBooks(fetched);
+    } catch (error) {
+      console.error("Error loading books:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchBooks();
   }, []);
+
+  // ⭐ Pull-to-refresh handler
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchBooks();
+    setRefreshing(false);
+  };
 
   // --- Quick Action Buttons ---
   const QuickAction = ({ icon, label, onPress }) => (
@@ -45,7 +65,13 @@ export default function HomeScreen({ navigation }) {
   );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       {/* 🔷 Custom Header */}
       <Header
         title="BookHive 📚"
@@ -71,7 +97,7 @@ export default function HomeScreen({ navigation }) {
         <QuickAction
           icon="library-outline"
           label="My Library"
-          onPress={() => navigation.navigate("My Rentals")}
+          onPress={() => navigation.navigate("MyLibrary")}
         />
         <QuickAction
           icon="search-outline"
@@ -89,7 +115,11 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#2196F3" style={{ marginVertical: 20 }} />
+        <ActivityIndicator
+          size="large"
+          color="#2196F3"
+          style={{ marginVertical: 20 }}
+        />
       ) : books.length === 0 ? (
         <Text style={styles.emptyText}>No books available right now.</Text>
       ) : (
