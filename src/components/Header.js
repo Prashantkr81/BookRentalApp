@@ -35,11 +35,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#2196F3",
+    height: 80,
+    paddingTop: 30,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomLeftRadius: 15,
     borderBottomRightRadius: 15,
     elevation: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+
   },
   headerTitle: {
     fontSize: 18,

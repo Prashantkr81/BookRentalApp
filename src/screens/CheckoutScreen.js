@@ -105,7 +105,14 @@ export default function CheckoutScreen({ route, navigation }) {
       }
 
       clearCart();
-      Alert.alert("✅ Checkout Successful!", "Books will be delivered soon.");
+      Alert.alert("✅ Checkout Successful!", "Books will be delivered soon.",
+      [
+        {
+          text: "OK",
+          onPress: () => navigation.navigate("Home"), // Redirect to Home
+        },
+      ]
+    );
       navigation.navigate("My Rentals");
     } catch (error) {
       console.error("Checkout error:", error);

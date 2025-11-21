@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Keyboard,
   TouchableWithoutFeedback,
+  RefreshControl,   // ⭐ Added
 } from "react-native";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../services/firebaseConfig";
@@ -20,22 +21,34 @@ export default function SearchScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredBooks, setFilteredBooks] = useState([]);
 
+  // ⭐ Pull to Refresh
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchBooks = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "books"));
+      const allBooks = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setBooks(allBooks);
+      setFilteredBooks(allBooks);
+    } catch (error) {
+      console.error("Error fetching books:", error);
+    }
+  };
+
   useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        const snapshot = await getDocs(collection(db, "books"));
-        const allBooks = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setBooks(allBooks);
-        setFilteredBooks(allBooks);
-      } catch (error) {
-        console.error("Error fetching books:", error);
-      }
-    };
     fetchBooks();
   }, []);
+
+  // ⭐ Pull to Refresh handler
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchBooks();
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     const query = searchQuery.toLowerCase();
@@ -65,6 +78,7 @@ export default function SearchScreen({ navigation }) {
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={{ flex: 1 }}>
+
           {filteredBooks.length === 0 ? (
             <Text style={styles.noResult}>No books found</Text>
           ) : (
@@ -72,6 +86,9 @@ export default function SearchScreen({ navigation }) {
               data={filteredBooks}
               keyExtractor={(item) => item.id}
               showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              } // ⭐ REFRESH ADDED HERE
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.card}
@@ -88,14 +105,18 @@ export default function SearchScreen({ navigation }) {
                     }}
                     style={styles.image}
                   />
+
                   <View style={{ flex: 1 }}>
                     <Text style={styles.title} numberOfLines={1}>
                       {item.title}
                     </Text>
+
                     <Text style={styles.author}>by {item.author}</Text>
+
                     {item.price && (
                       <Text style={styles.priceText}>₹{item.price}</Text>
                     )}
+
                     <Text style={styles.available}>
                       {item.isAvailable ? "✅ Available" : "❌ Rented"}
                     </Text>

@@ -60,7 +60,7 @@ export default function AppNavigator() {
       <Tab.Screen name="Add Book" component={AddBookScreen} />
       <Tab.Screen name="Notification" component={NotificationsScreen} />
       <Tab.Screen
-  name="Cart"
+        name="Cart"
   component={CartScreen}
   options={{
     tabBarIcon: ({ color, size, focused }) => (<Ionicons name={focused ? "cart" : "cart-outline"} size={size} color={color} />),}}/>

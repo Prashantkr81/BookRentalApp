@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "BookRentalApp",
+    "name": "BookHive",
     "slug": "BookRentalApp",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -57,12 +57,12 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
+    "owner": "prashantkr81",
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "7907e860-2d71-4f2f-aaed-b92800dd2deb"
+        "projectId": "4f3ed2e6-b676-4d35-b857-6e5966204299"
       }
-    },
-    "owner": "prashantkr81"
+    }
   }
 }
