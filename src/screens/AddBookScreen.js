@@ -111,7 +111,7 @@ export default function AddBookScreen({ navigation }) {
     try {
       // Default image URL if user doesn’t upload one
       let imageUrl =
-        "https://cdn-icons-png.flaticon.com/512/2232/2232688.png";
+        "https://tse1.mm.bing.net/th/id/OIP.hiPADsSRpeOaUGtAN5_TKwAAAA?pid=ImgDet&w=184&h=276&c=7&dpr=1.3&o=7&rm=3";
 
       // Upload to Cloudinary if image selected
       if (image) {
