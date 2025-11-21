@@ -10,7 +10,12 @@ import {
   ActivityIndicator,
   ScrollView,
 } from "react-native";
-import { doc, updateDoc, addDoc, collection } from "firebase/firestore";
+import {
+  doc,
+  addDoc,
+  collection,
+  getDoc,
+} from "firebase/firestore";
 import { db, auth } from "../services/firebaseConfig";
 import { CartContext } from "../context/CartContext";
 import Header from "../components/Header";
@@ -21,15 +26,21 @@ export default function BookDetailScreen({ route, navigation }) {
   const [loading, setLoading] = useState(false);
   const user = auth.currentUser;
 
-  // 🛒 Add book to cart
+  const isOwner = user && book.ownerId === user.uid;
+
+  // ------------------------ Add to Cart ------------------------
   const handleAddToCart = async () => {
     if (!user) {
       Alert.alert("Login Required", "Please log in to add books to your cart.");
       return;
     }
 
+    if (isOwner) {
+      Alert.alert("Not Allowed", "You cannot add your own book to cart.");
+      return;
+    }
+
     try {
-      // Add to Firestore
       await addDoc(collection(db, "cart"), {
         userId: user.uid,
         bookId: book.id,
@@ -40,198 +51,206 @@ export default function BookDetailScreen({ route, navigation }) {
         addedAt: new Date().toISOString(),
       });
 
-      // Update local context
       addToCart(book);
-
-      Alert.alert("✅ Added to Cart", `"${book.title}" has been added to your cart.`);
+      Alert.alert("Added!", `"${book.title}" added to your cart.`);
     } catch (error) {
-      console.error("Error adding to cart:", error);
-      Alert.alert("❌ Error", "Could not add book to cart.");
+      console.error("Cart Error:", error);
+      Alert.alert("Error", "Could not add book to cart.");
     }
   };
 
-  // 🟢 Rent Now → Direct Checkout
-  const handleRentBook = async () => {
+  // ------------------------ Rent Now (Navigate Only) ------------------------
+  const handleRentBook = () => {
     if (!user) {
       Alert.alert("Login Required", "Please log in to rent a book.");
       return;
     }
 
-    if (!book.isAvailable) {
-      Alert.alert("❌ Unavailable", "This book is currently rented.");
+    if (isOwner) {
+      Alert.alert("Not Allowed", "You cannot rent your own book.");
       return;
     }
 
-    try {
-      setLoading(true);
-
-      // ✅ Update Firestore: mark book as rented
-      const bookRef = doc(db, "books", book.id);
-      await updateDoc(bookRef, {
-        isAvailable: false,
-        rentedBy: user.uid,
-        rentedAt: new Date().toISOString(),
-      });
-
-      // ✅ Add to rental history (optional)
-      await addDoc(collection(db, "rentals"), {
-        userId: user.uid,
-        bookId: book.id,
-        title: book.title,
-        author: book.author,
-        image: book.image || null,
-        price: book.price || 0,
-        rentedAt: new Date().toISOString(),
-        status: "rented",
-      });
-
-      // ✅ Navigate to Checkout screen directly
-      navigation.navigate("Checkout", {
-        cart: [book], // pass as array (Checkout expects array)
-        singleBook: true, // mark single-book checkout
-      });
-    } catch (error) {
-      console.error("Error renting book:", error);
-      Alert.alert("❌ Error", "Failed to rent book. Try again later.");
-    } finally {
-      setLoading(false);
+    if (!book.isAvailable) {
+      Alert.alert("Unavailable", "This book is currently rented.");
+      return;
     }
+
+    // ✔ No renting logic here
+    // ✔ No notifications here
+    // ✔ Only navigate to checkout
+    navigation.navigate("Checkout", {
+      cart: [book],
+      singleBook: true,
+    });
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#f5f5f5" }}>
-      <Header title="Book Details" showBack={true} onBackPress={() => navigation.goBack()} />
+      <Header
+        title="Book Details"
+        showBack={true}
+        onBackPress={() => navigation.goBack()}
+      />
 
       <ScrollView contentContainerStyle={styles.container}>
-        {/* 📘 Thumbnail beside title */}
-        <View style={styles.headerRow}>
+        
+        {/* Amazon-style book preview */}
+        <View style={styles.coverWrapper}>
           <Image
             source={{
               uri: book.image || "https://cdn-icons-png.flaticon.com/512/2232/2232688.png",
             }}
-            style={styles.avatarThumb}
+            style={styles.coverImage}
+            resizeMode="contain"
           />
-          <View style={{ marginLeft: 10 }}>
-            <Text style={styles.title}>{book.title}</Text>
-            <Text style={styles.author}>by {book.author}</Text>
-          </View>
         </View>
 
-        {/* 🖼️ Large Book Cover */}
-        <Image
-          source={{
-            uri: book.image || "https://cdn-icons-png.flaticon.com/512/2232/2232688.png",
-          }}
-          style={styles.image}
-          resizeMode="cover"
-        />
+        {/* Info Section */}
+        <View style={styles.infoContainer}>
+          <Text style={styles.title}>{book.title}</Text>
+          <Text style={styles.author}>by {book.author}</Text>
 
-        {/* 📑 Description */}
-        <Text style={styles.description}>
-          {book.description || "No description available for this book."}
-        </Text>
+          <Text style={styles.description}>
+            {book.description || "No description available."}
+          </Text>
 
-        {/* 💰 Price & Availability */}
-        <View style={styles.infoBox}>
-          <Text style={styles.priceText}>💰 Price: ₹{book.price || 0}</Text>
+          <Text style={styles.priceText}>₹ {book.price || 0}</Text>
+
           <Text
             style={[
               styles.availability,
               { color: book.isAvailable ? "#4CAF50" : "#F44336" },
             ]}
           >
-            {book.isAvailable ? "✅ Available" : "❌ Currently Rented"}
+            {book.isAvailable ? "Available" : "Currently Rented"}
           </Text>
-        </View>
 
-        {/* 🛒 Add to Cart */}
-        <TouchableOpacity
-          style={styles.cartButton}
-          onPress={handleAddToCart}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.cartText}>🛒 Add to Cart</Text>
-        </TouchableOpacity>
-
-        {/* 🟢 Rent Now */}
-        <TouchableOpacity
-          style={[
-            styles.rentButton,
-            !book.isAvailable && { backgroundColor: "#aaa" },
-          ]}
-          onPress={handleRentBook}
-          disabled={!book.isAvailable || loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.rentText}>
-              {book.isAvailable ? "Rent Now" : "Unavailable"}
+          {/* Add to Cart */}
+          <TouchableOpacity
+            style={[
+              styles.cartButton,
+              isOwner && { backgroundColor: "#bbb" },
+            ]}
+            disabled={isOwner}
+            onPress={handleAddToCart}
+          >
+            <Text style={styles.cartText}>
+              {isOwner ? "You Own This Book" : "🛒 Add to Cart"}
             </Text>
-          )}
-        </TouchableOpacity>
+          </TouchableOpacity>
+
+          {/* Rent Now */}
+          <TouchableOpacity
+            style={[
+              styles.rentButton,
+              (!book.isAvailable || isOwner) && { backgroundColor: "#888" },
+            ]}
+            disabled={!book.isAvailable || isOwner}
+            onPress={handleRentBook}
+          >
+            <Text style={styles.rentText}>
+              {isOwner
+                ? "You Own This Book"
+                : book.isAvailable
+                ? "Rent Now"
+                : "Unavailable"}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
 }
 
+// ------------------------------------------------------------------
+
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    alignItems: "center",
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  avatarThumb: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#eee",
-  },
-  image: {
+  container: { padding: 20 },
+
+  coverWrapper: {
     width: "100%",
-    height: 300,
+    height: 380,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 25,
+    padding: 20,
+    elevation: 6,
+  },
+
+  coverImage: {
+    width: "70%",
+    height: "100%",
     borderRadius: 10,
+  },
+
+  infoContainer: {
+    width: "100%",
+    alignItems: "flex-start",
+  },
+
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#222",
+    marginBottom: 4,
+  },
+
+  author: {
+    fontSize: 16,
+    color: "#666",
     marginBottom: 15,
   },
-  title: { fontSize: 22, fontWeight: "bold", color: "#333" },
-  author: { fontSize: 15, color: "#666", marginBottom: 5 },
+
   description: {
     fontSize: 15,
+    lineHeight: 22,
     color: "#555",
-    textAlign: "center",
     marginBottom: 20,
   },
-  infoBox: { marginBottom: 25, alignItems: "center" },
+
   priceText: {
-    fontSize: 18,
+    fontSize: 26,
     fontWeight: "bold",
     color: "#2196F3",
-    marginBottom: 5,
   },
+
   availability: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginTop: 5,
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 6,
+    marginBottom: 25,
   },
+
   cartButton: {
     backgroundColor: "#FF9800",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    width: "100%",
-    marginBottom: 12,
-  },
-  cartText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-  rentButton: {
-    backgroundColor: "#2196F3",
     paddingVertical: 14,
     borderRadius: 10,
-    alignItems: "center",
     width: "100%",
+    alignItems: "center",
+    marginBottom: 12,
   },
-  rentText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+
+  cartText: {
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "bold",
+  },
+
+  rentButton: {
+    backgroundColor: "#2196F3",
+    paddingVertical: 16,
+    borderRadius: 10,
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
+  rentText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
 });
