@@ -1,11 +1,14 @@
-import React from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { addDoc, collection } from "firebase/firestore";
+import { useMemo } from "react";
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import placeholder from "../../assets/images/book_placeholder.jpg";
-import { collection, addDoc } from "firebase/firestore";
+import { useTheme } from "../context/ThemeContext";
 import { auth, db } from "../services/firebaseConfig";
 
 export default function BookCard({ book }) {
   const user = auth.currentUser;
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const handleAddToCart = async () => {
     if (!user) {
@@ -50,9 +53,9 @@ export default function BookCard({ book }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     marginVertical: 10,
     padding: 10,
@@ -65,12 +68,12 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 10,
     marginBottom: 10,
-    backgroundColor: "#eee",
+    backgroundColor: theme.colors.border,
   },
-  title: { fontSize: 18, fontWeight: "bold", color: "#333" },
-  author: { fontSize: 14, color: "#666", marginBottom: 12 },
+  title: { fontSize: 18, fontWeight: "bold", color: theme.colors.text },
+  author: { fontSize: 14, color: theme.colors.subText, marginBottom: 12 },
   cartButton: {
-    backgroundColor: "#2196F3",
+    backgroundColor: theme.colors.primary,
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: "center",
