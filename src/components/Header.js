@@ -1,14 +1,19 @@
-import React from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useMemo } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../context/ThemeContext";
 
 export default function Header({ title, showBack = false, onBackPress, rightIcon, onRightPress }) {
+  const { theme } = useTheme();
+  
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <View style={styles.headerContainer}>
       {/* Back Button */}
       {showBack ? (
         <TouchableOpacity style={styles.iconButton} onPress={onBackPress}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
       ) : (
         <View style={styles.iconPlaceholder} />
@@ -20,7 +25,7 @@ export default function Header({ title, showBack = false, onBackPress, rightIcon
       {/* Right Icon (optional) */}
       {rightIcon ? (
         <TouchableOpacity style={styles.iconButton} onPress={onRightPress}>
-          <Ionicons name={rightIcon} size={24} color="#fff" />
+          <Ionicons name={rightIcon} size={24} color={theme.colors.text} />
         </TouchableOpacity>
       ) : (
         <View style={styles.iconPlaceholder} />
@@ -29,12 +34,12 @@ export default function Header({ title, showBack = false, onBackPress, rightIcon
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#2196F3",
+    backgroundColor: theme.colors.primary,
     height: 80,
     paddingTop: 30,
     paddingVertical: 14,
@@ -46,12 +51,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     shadowOffset: { width: 0, height: 2 },
-
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#fff",
+    color: theme.colors.text,
   },
   iconButton: {
     padding: 6,
