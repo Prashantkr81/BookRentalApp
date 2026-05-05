@@ -1,3 +1,4 @@
+**Deployed link:** [Visit App](https://bookhives--zv3n5yog5w.expo.app/)
 # 📚 BookHive – Community Book Rental App
 
 BookHive is a modern **React Native + Expo** application designed to enable users to **rent, lend, and share books** within their local community.  
