@@ -1,24 +1,27 @@
-import React, { useState, useContext } from "react";
+import { sendPasswordResetEmail, signInWithEmailAndPassword } from "firebase/auth";
+import { useContext, useMemo, useState } from "react";
 import {
-  View,
-  TextInput,
-  Button,
-  Text,
-  Image,
-  ActivityIndicator,
-  StyleSheet,
-  Alert,
-  TouchableOpacity,
+    ActivityIndicator,
+    Alert,
+    Button,
+    Image,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "../../services/firebaseConfig";
 import { AuthContext } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
+import { auth } from "../../services/firebaseConfig";
 
 export default function LoginScreen({ navigation }) {
   const { setUser } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -65,6 +68,7 @@ export default function LoginScreen({ navigation }) {
 
       <TextInput
         placeholder="Email"
+        placeholderTextColor={theme.colors.subText}
         value={email}
         onChangeText={setEmail}
         style={styles.input}
@@ -72,6 +76,7 @@ export default function LoginScreen({ navigation }) {
       />
       <TextInput
         placeholder="Password"
+        placeholderTextColor={theme.colors.subText}
         secureTextEntry
         value={password}
         onChangeText={setPassword}
@@ -84,7 +89,7 @@ export default function LoginScreen({ navigation }) {
       </TouchableOpacity>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#2196F3" style={{ marginVertical: 20 }} />
+        <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginVertical: 20 }} />
       ) : (
         <Button title="Login" onPress={handleLogin} />
       )}
@@ -92,7 +97,7 @@ export default function LoginScreen({ navigation }) {
       <Text style={styles.linkText}>
         Don’t have an account?{" "}
         <Text
-          style={{ color: "#2196F3", fontWeight: "bold" }}
+          style={{ color: theme.colors.primary, fontWeight: "bold" }}
           onPress={() => navigation.navigate("Register")}
         >
           Register
@@ -102,8 +107,8 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#f5f5f5", justifyContent: "center" },
+const createStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: theme.colors.background, justifyContent: "center" },
   logo: {
     width: 120,
     height: 120,
@@ -114,20 +119,21 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#333",
+    color: theme.colors.text,
     textAlign: "center",
     marginBottom: 25,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#6d6d6dff",
+    borderColor: theme.colors.border,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
+    color: theme.colors.text,
   },
   forgotPasswordText: {
-    color: "#2196F3",
+    color: theme.colors.primary,
     textAlign: "right",
     marginBottom: 20,
     fontWeight: "500",
@@ -136,6 +142,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
     fontSize: 14,
-    color: "#555",
+    color: theme.colors.subText,
   },
 });
