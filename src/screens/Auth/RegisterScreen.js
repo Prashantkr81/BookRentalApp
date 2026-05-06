@@ -1,16 +1,17 @@
-import React, { useState } from "react";
-import {
-  View,
-  TextInput,
-  Button,
-  Alert,
-  ActivityIndicator,
-  StyleSheet,
-  Image,
-  Text,
-} from "react-native";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { setDoc, doc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
+import { useMemo, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    Button,
+    Image,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
+} from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 import { auth, db } from "../../services/firebaseConfig";
 
 export default function RegisterScreen({ navigation }) {
@@ -18,6 +19,8 @@ export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const handleRegister = async () => {
     if (!name || !email || !password) {
@@ -68,12 +71,14 @@ export default function RegisterScreen({ navigation }) {
 
       <TextInput
         placeholder="Full Name"
+        placeholderTextColor={theme.colors.subText}
         value={name}
         onChangeText={setName}
         style={styles.input}
       />
       <TextInput
         placeholder="Email"
+        placeholderTextColor={theme.colors.subText}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -81,6 +86,7 @@ export default function RegisterScreen({ navigation }) {
       />
       <TextInput
         placeholder="Password"
+        placeholderTextColor={theme.colors.subText}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -88,7 +94,7 @@ export default function RegisterScreen({ navigation }) {
       />
 
       {loading ? (
-        <ActivityIndicator size="large" color="#2196F3" style={{ marginVertical: 20 }} />
+        <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginVertical: 20 }} />
       ) : (
         <Button title="Register" onPress={handleRegister} />
       )}
@@ -97,15 +103,15 @@ export default function RegisterScreen({ navigation }) {
         <Button
           title="Already have an account? Log In"
           onPress={() => navigation.replace("Login")}
-          color="#2196F3"
+          color={theme.colors.primary}
         />
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#f5f5f5", justifyContent: "center" },
+const createStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: theme.colors.background, justifyContent: "center" },
   logo: {
     width: 120,
     height: 120,
@@ -116,16 +122,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#333",
+    color: theme.colors.text,
     textAlign: "center",
     marginBottom: 25,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: theme.colors.border,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
+    color: theme.colors.text,
   },
 });
