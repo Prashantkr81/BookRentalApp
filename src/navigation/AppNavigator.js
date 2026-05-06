@@ -19,12 +19,12 @@ export default function AppNavigator() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: true,
-        tabBarActiveTintColor: "#2196F3",
-        tabBarInactiveTintColor: "#777",
+        tabBarActiveTintColor: "theme.colors.primary",
+        tabBarInactiveTintColor: "theme.colors.subText",
         tabBarStyle: {
-          backgroundColor: "#fff",
+          backgroundColor: "theme.colors.background",
           borderTopWidth: 0.5,
-          borderTopColor: "#ddd",
+          borderTopColor: "theme.colors.border",
           height: 60,
           paddingBottom: 5,
         },
