@@ -1,19 +1,20 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  TextInput,
-  Button,
-  Image,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  ActivityIndicator,
-} from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { addDoc, collection } from "firebase/firestore";
-import { db, auth } from "../services/firebaseConfig";
+import { useEffect, useMemo, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    Button,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
+} from "react-native";
 import Header from "../components/Header";
+import { useTheme } from "../context/ThemeContext";
+import { auth, db } from "../services/firebaseConfig";
 
 export default function AddBookScreen({ navigation }) {
   const [title, setTitle] = useState("");
@@ -22,6 +23,8 @@ export default function AddBookScreen({ navigation }) {
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   // ⭐ Your Cloudinary Config (ADD YOUR VALUES)
   const CLOUD_NAME = "bookrental-81";
@@ -160,6 +163,7 @@ export default function AddBookScreen({ navigation }) {
         <Text style={styles.label}>Book Title</Text>
         <TextInput
           placeholder="Enter book title"
+          placeholderTextColor={theme.colors.subText}
           value={title}
           onChangeText={setTitle}
           style={styles.input}
@@ -168,6 +172,7 @@ export default function AddBookScreen({ navigation }) {
         <Text style={styles.label}>Author</Text>
         <TextInput
           placeholder="Enter author name"
+          placeholderTextColor={theme.colors.subText}
           value={author}
           onChangeText={setAuthor}
           style={styles.input}
@@ -176,6 +181,7 @@ export default function AddBookScreen({ navigation }) {
         <Text style={styles.label}>Price (in ₹)</Text>
         <TextInput
           placeholder="Enter price for renting"
+          placeholderTextColor={theme.colors.subText}
           value={price}
           onChangeText={setPrice}
           keyboardType="numeric"
@@ -185,6 +191,7 @@ export default function AddBookScreen({ navigation }) {
         <Text style={styles.label}>Description</Text>
         <TextInput
           placeholder="Enter description (optional)"
+          placeholderTextColor={theme.colors.subText}
           multiline
           value={description}
           onChangeText={setDescription}
@@ -197,8 +204,8 @@ export default function AddBookScreen({ navigation }) {
 
         {uploading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#2196F3" />
-            <Text style={{ marginTop: 8, color: "#555" }}>Uploading...</Text>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={{ marginTop: 8, color: theme.colors.subText }}>Uploading...</Text>
           </View>
         ) : (
           <Button title="Add Book" onPress={uploadBook} />
@@ -211,17 +218,18 @@ export default function AddBookScreen({ navigation }) {
 // ----------------------------------------------------------
 // 🎨 STYLES
 // ----------------------------------------------------------
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
+const createStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
   formContainer: { padding: 20 },
-  label: { fontSize: 14, fontWeight: "bold", color: "#333", marginTop: 10 },
+  label: { fontSize: 14, fontWeight: "bold", color: theme.colors.text, marginTop: 10 },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     borderRadius: 8,
     padding: 10,
     marginTop: 5,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: theme.colors.border,
+    color: theme.colors.text,
   },
   imagePreview: {
     width: "100%",
