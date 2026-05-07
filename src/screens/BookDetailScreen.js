@@ -1,29 +1,29 @@
 // src/screens/BookDetailScreen.js
-import React, { useState, useContext } from "react";
 import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-} from "react-native";
-import {
-  doc,
-  addDoc,
-  collection,
-  getDoc,
+    addDoc,
+    collection
 } from "firebase/firestore";
-import { db, auth } from "../services/firebaseConfig";
-import { CartContext } from "../context/CartContext";
+import { useContext, useMemo, useState } from "react";
+import {
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from "react-native";
 import Header from "../components/Header";
+import { CartContext } from "../context/CartContext";
+import { useTheme } from "../context/ThemeContext";
+import { auth, db } from "../services/firebaseConfig";
 
 export default function BookDetailScreen({ route, navigation }) {
   const { book } = route.params;
   const { addToCart } = useContext(CartContext);
   const [loading, setLoading] = useState(false);
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const user = auth.currentUser;
 
   const isOwner = user && book.ownerId === user.uid;
@@ -86,7 +86,7 @@ export default function BookDetailScreen({ route, navigation }) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#f5f5f5" }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <Header
         title="Book Details"
         showBack={true}
@@ -165,13 +165,13 @@ export default function BookDetailScreen({ route, navigation }) {
 
 // ------------------------------------------------------------------
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: { padding: 20 },
 
   coverWrapper: {
     width: "100%",
     height: 380,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
@@ -194,27 +194,27 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#222",
+    color: theme.colors.text,
     marginBottom: 4,
   },
 
   author: {
     fontSize: 16,
-    color: "#666",
+    color: theme.colors.subText,
     marginBottom: 15,
   },
 
   description: {
     fontSize: 15,
     lineHeight: 22,
-    color: "#555",
+    color: theme.colors.subText,
     marginBottom: 20,
   },
 
   priceText: {
     fontSize: 26,
     fontWeight: "bold",
-    color: "#2196F3",
+    color: theme.colors.primary,
   },
 
   availability: {
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   },
 
   rentButton: {
-    backgroundColor: "#2196F3",
+    backgroundColor: theme.colors.primary,
     paddingVertical: 16,
     borderRadius: 10,
     width: "100%",
