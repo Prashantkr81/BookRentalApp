@@ -1,25 +1,28 @@
 // src/screens/SearchScreen.js
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  TextInput,
-  FlatList,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  Keyboard,
-  TouchableWithoutFeedback,
-  RefreshControl,   // ⭐ Added
-} from "react-native";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../services/firebaseConfig";
+import { useEffect, useMemo, useState } from "react";
+import {
+    FlatList,
+    Image,
+    Keyboard,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
+} from "react-native";
 import Header from "../components/Header";
+import { useTheme } from "../context/ThemeContext";
+import { db } from "../services/firebaseConfig";
 
 export default function SearchScreen({ navigation }) {
   const [books, setBooks] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredBooks, setFilteredBooks] = useState([]);
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   // ⭐ Pull to Refresh
   const [refreshing, setRefreshing] = useState(false);
@@ -71,6 +74,7 @@ export default function SearchScreen({ navigation }) {
       <TextInput
         style={styles.searchBar}
         placeholder="Search by title or author..."
+        placeholderTextColor={theme.colors.subText}
         value={searchQuery}
         onChangeText={setSearchQuery}
         autoFocus={true}
@@ -131,19 +135,20 @@ export default function SearchScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9f9f9" },
+const createStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
   searchBar: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: theme.colors.border,
     borderRadius: 10,
     padding: 10,
     margin: 12,
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
+    color: theme.colors.text,
   },
   card: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     padding: 10,
     marginHorizontal: 10,
     marginBottom: 10,
@@ -156,15 +161,15 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 35,
     marginRight: 12,
-    backgroundColor: "#eee",
+    backgroundColor: theme.colors.border,
   },
-  title: { fontSize: 16, fontWeight: "bold", color: "#333" },
-  author: { color: "#666", marginTop: 2 },
-  available: { fontSize: 12, color: "#2196F3", marginTop: 5 },
-  noResult: { textAlign: "center", marginTop: 50, color: "#999" },
+  title: { fontSize: 16, fontWeight: "bold", color: theme.colors.text },
+  author: { color: theme.colors.subText, marginTop: 2 },
+  available: { fontSize: 12, color: theme.colors.primary, marginTop: 5 },
+  noResult: { textAlign: "center", marginTop: 50, color: theme.colors.subText },
   priceText: {
     fontWeight: "bold",
-    color: "#2196F3",
+    color: theme.colors.primary,
     marginTop: 3,
   },
 });

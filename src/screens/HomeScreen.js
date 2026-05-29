@@ -1,23 +1,26 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  ActivityIndicator,
-  RefreshControl,   // ⭐ Added
-} from "react-native";
-import { collection, getDocs, query, limit, orderBy } from "firebase/firestore";
-import { db } from "../services/firebaseConfig";
-import Header from "../components/Header";
 import { Ionicons } from "@expo/vector-icons";
+import { collection, getDocs, limit, orderBy, query } from "firebase/firestore";
+import { useEffect, useMemo, useState } from "react";
+import {
+    ActivityIndicator,
+    FlatList,
+    Image,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import Header from "../components/Header";
+import { useTheme } from "../context/ThemeContext";
+import { db } from "../services/firebaseConfig";
 
 export default function HomeScreen({ navigation }) {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   // ⭐ Pull to Refresh state
   const [refreshing, setRefreshing] = useState(false);
@@ -59,7 +62,7 @@ export default function HomeScreen({ navigation }) {
   // --- Quick Action Buttons ---
   const QuickAction = ({ icon, label, onPress }) => (
     <TouchableOpacity style={styles.actionCard} onPress={onPress}>
-      <Ionicons name={icon} size={28} color="#2196F3" />
+      <Ionicons name={icon} size={28} color={theme.colors.primary} />
       <Text style={styles.actionText}>{label}</Text>
     </TouchableOpacity>
   );
@@ -117,7 +120,7 @@ export default function HomeScreen({ navigation }) {
       {loading ? (
         <ActivityIndicator
           size="large"
-          color="#2196F3"
+          color={theme.colors.primary}
           style={{ marginVertical: 20 }}
         />
       ) : books.length === 0 ? (
@@ -167,24 +170,24 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9f9f9" },
+const createStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
   welcomeSection: {
     padding: 20,
     paddingTop: 10,
-    backgroundColor: "#E3F2FD",
+    backgroundColor: theme.isDarkMode ? "#1a3a52" : "#E3F2FD",
     borderBottomLeftRadius: 25,
     borderBottomRightRadius: 25,
   },
-  welcomeTitle: { fontSize: 22, fontWeight: "bold", color: "#0D47A1" },
-  welcomeSubtitle: { fontSize: 14, color: "#555", marginTop: 4 },
+  welcomeTitle: { fontSize: 22, fontWeight: "bold", color: theme.isDarkMode ? "#64B5F6" : "#0D47A1" },
+  welcomeSubtitle: { fontSize: 14, color: theme.colors.subText, marginTop: 4 },
   actionRow: {
     flexDirection: "row",
     justifyContent: "space-around",
     marginVertical: 20,
   },
   actionCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
@@ -192,7 +195,7 @@ const styles = StyleSheet.create({
     width: 100,
     elevation: 3,
   },
-  actionText: { fontSize: 13, fontWeight: "600", color: "#333", marginTop: 5 },
+  actionText: { fontSize: 13, fontWeight: "600", color: theme.colors.text, marginTop: 5 },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -200,10 +203,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 8,
   },
-  sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#333" },
-  viewAll: { color: "#2196F3", fontWeight: "600" },
+  sectionTitle: { fontSize: 18, fontWeight: "bold", color: theme.colors.text },
+  viewAll: { color: theme.colors.primary, fontWeight: "600" },
   bookCard: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     borderRadius: 10,
     marginRight: 12,
     padding: 10,
@@ -215,12 +218,12 @@ const styles = StyleSheet.create({
     height: 170,
     borderRadius: 8,
     marginBottom: 8,
-    backgroundColor: "#eee",
+    backgroundColor: theme.colors.border,
   },
-  bookTitle: { fontSize: 14, fontWeight: "bold", color: "#333" },
-  bookAuthor: { fontSize: 12, color: "#777" },
+  bookTitle: { fontSize: 14, fontWeight: "bold", color: theme.colors.text },
+  bookAuthor: { fontSize: 12, color: theme.colors.subText },
   infoBanner: {
-    backgroundColor: "#2196F3",
+    backgroundColor: theme.colors.primary,
     margin: 15,
     borderRadius: 12,
     padding: 15,
@@ -232,14 +235,14 @@ const styles = StyleSheet.create({
   footer: {
     textAlign: "center",
     fontSize: 12,
-    color: "#777",
+    color: theme.colors.subText,
     marginTop: 20,
     marginBottom: 10,
   },
   emptyText: {
     textAlign: "center",
     fontSize: 15,
-    color: "#999",
+    color: theme.colors.subText,
     marginVertical: 20,
   },
 });

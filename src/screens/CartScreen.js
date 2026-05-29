@@ -1,19 +1,22 @@
 // src/screens/CartScreen.js
-import React, { useContext } from "react";
+import { useContext, useMemo } from "react";
 import {
-  View,
-  Text,
-  FlatList,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
+    Alert,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { CartContext } from "../context/CartContext";
 import Header from "../components/Header";
+import { CartContext } from "../context/CartContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function CartScreen({ navigation }) {
   const { cart, removeFromCart, clearCart } = useContext(CartContext);
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   // 🧮 Calculate total price
   const total = cart.reduce((sum, item) => sum + (item.price || 0), 0);
@@ -108,21 +111,21 @@ export default function CartScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
+const createStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
   item: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     borderRadius: 10,
     marginBottom: 10,
     padding: 10,
     elevation: 2,
   },
   image: { width: 70, height: 100, borderRadius: 6, marginRight: 10 },
-  title: { fontSize: 16, fontWeight: "bold", color: "#333" },
-  author: { fontSize: 14, color: "#666" },
-  price: { color: "#2196F3", fontWeight: "bold", marginTop: 4 },
+  title: { fontSize: 16, fontWeight: "bold", color: theme.colors.text },
+  author: { fontSize: 14, color: theme.colors.subText },
+  price: { color: theme.colors.primary, fontWeight: "bold", marginTop: 4 },
   removeButton: {
     backgroundColor: "#f44336",
     borderRadius: 20,
@@ -132,23 +135,23 @@ const styles = StyleSheet.create({
   },
   removeText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
   emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  emptyText: { fontSize: 18, color: "#999", marginBottom: 20 },
+  emptyText: { fontSize: 18, color: theme.colors.subText, marginBottom: 20 },
   browseButton: {
-    backgroundColor: "#2196F3",
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   browseText: { color: "#fff", fontWeight: "bold" },
   summary: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     padding: 15,
     borderTopWidth: 0.5,
-    borderColor: "#ddd",
+    borderColor: theme.colors.border,
   },
-  totalText: { fontSize: 18, fontWeight: "bold", color: "#333", marginBottom: 10 },
+  totalText: { fontSize: 18, fontWeight: "bold", color: theme.colors.text, marginBottom: 10 },
   checkoutButton: {
-    backgroundColor: "#2196F3",
+    backgroundColor: theme.colors.primary,
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: "center",

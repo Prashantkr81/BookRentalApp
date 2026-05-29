@@ -1,29 +1,31 @@
-import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
-  RefreshControl,
-} from "react-native";
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  updateDoc,
-  doc,
+    collection,
+    doc,
+    onSnapshot,
+    query,
+    updateDoc,
+    where
 } from "firebase/firestore";
-import { auth, db } from "../services/firebaseConfig";
+import { useEffect, useMemo, useState } from "react";
+import {
+    ActivityIndicator,
+    FlatList,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import Header from "../components/Header";
+import { useTheme } from "../context/ThemeContext";
+import { auth, db } from "../services/firebaseConfig";
 
 export default function NotificationsScreen({ navigation }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const user = auth.currentUser;
 
   useEffect(() => {
@@ -63,8 +65,8 @@ export default function NotificationsScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={{ marginTop: 10 }}>Loading notifications...</Text>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={{ marginTop: 10, color: theme.colors.text }}>Loading notifications...</Text>
       </View>
     );
   }
@@ -109,18 +111,18 @@ export default function NotificationsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
+const createStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  emptyText: { fontSize: 16, color: "#888" },
+  emptyText: { fontSize: 16, color: theme.colors.subText },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     padding: 14,
     borderRadius: 10,
     marginBottom: 10,
     elevation: 3,
   },
-  unread: { borderLeftWidth: 5, borderLeftColor: "#2196F3" },
-  message: { fontSize: 15, color: "#333", marginBottom: 6 },
-  date: { fontSize: 12, color: "#888", textAlign: "right" },
+  unread: { borderLeftWidth: 5, borderLeftColor: theme.colors.primary },
+  message: { fontSize: 15, color: theme.colors.text, marginBottom: 6 },
+  date: { fontSize: 12, color: theme.colors.subText, textAlign: "right" },
 });

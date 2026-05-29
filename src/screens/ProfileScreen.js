@@ -1,33 +1,34 @@
-import React, { useEffect, useState, useContext, useCallback } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  Image,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
   ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
   RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import {
   collection,
-  query,
-  where,
-  getDocs,
+  deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  query,
   updateDoc,
-  deleteDoc,
+  where,
 } from "firebase/firestore";
 
 import { signOut } from "firebase/auth";
-import { auth, db } from "../services/firebaseConfig";
+import Icon from "react-native-vector-icons/MaterialIcons";
 import Header from "../components/Header";
 import { AuthContext } from "../context/AuthContext";
-import Icon from "react-native-vector-icons/MaterialIcons";
+import { useTheme } from "../context/ThemeContext";
+import { auth, db } from "../services/firebaseConfig";
 
 export default function ProfileScreen({ navigation }) {
   const [listedBooks, setListedBooks] = useState([]);
@@ -35,8 +36,9 @@ export default function ProfileScreen({ navigation }) {
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
   const [editMode, setEditMode] = useState(false);
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const { setUser } = useContext(AuthContext);
   const user = auth.currentUser;
@@ -160,8 +162,8 @@ export default function ProfileScreen({ navigation }) {
   if (loading && !refreshing) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2196F3" />
-        <Text>Loading profile...</Text>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={{ color: theme.colors.text }}>Loading profile...</Text>
       </View>
     );
   }
@@ -321,14 +323,14 @@ export default function ProfileScreen({ navigation }) {
 // ----------------------------------------------------------------------------
 // STYLES
 // ----------------------------------------------------------------------------
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
+const createStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
   header: { alignItems: "center", marginVertical: 20 },
   profileImage: { width: 100, height: 100, borderRadius: 50 },
-  name: { fontSize: 20, fontWeight: "bold", color: "#333" },
-  email: { color: "#666", marginTop: 4 },
+  name: { fontSize: 20, fontWeight: "bold", color: theme.colors.text },
+  email: { color: theme.colors.subText, marginTop: 4 },
 
   sectionHeader: {
     flexDirection: "row",
@@ -340,25 +342,25 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#2196F3",
+    color: theme.colors.primary,
     marginLeft: 10,
   },
   editToggle: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#2196F3",
+    color: theme.colors.primary,
     paddingRight: 10,
   },
 
   emptyText: {
     textAlign: "center",
     fontSize: 14,
-    color: "#777",
+    color: theme.colors.subText,
     marginVertical: 10,
   },
 
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     borderRadius: 10,
     padding: 10,
     width: 160,
@@ -373,12 +375,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
 
-  bookTitle: { fontWeight: "bold", fontSize: 14, textAlign: "center" },
-  bookAuthor: { fontSize: 12, color: "#666", marginBottom: 5 },
+  bookTitle: { fontWeight: "bold", fontSize: 14, textAlign: "center", color: theme.colors.text },
+  bookAuthor: { fontSize: 12, color: theme.colors.subText, marginBottom: 5 },
 
   actionButton: {
     flexDirection: "row",
-    backgroundColor: "#2196F3",
+    backgroundColor: theme.colors.primary,
     padding: 6,
     borderRadius: 6,
     width: "100%",
@@ -397,10 +399,9 @@ const styles = StyleSheet.create({
   },
 
   logoutButton: {
-    backgroundColor: "#000000ff",
+    backgroundColor: theme.isDarkMode ? "#333" : "#000000ff",
     paddingVertical: 12,
     margin: 30,
-    // marginInline: 650,
     borderRadius: 10,
   },
   logoutText: {
