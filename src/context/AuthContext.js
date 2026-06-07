@@ -13,12 +13,17 @@ export const AuthProvider = ({ children }) => {
 
   // Track authentication state and persist to AsyncStorage
   useEffect(() => {
+    let mounted = true;
+    const hasStoredUser = { current: false }; // Track if we found a stored user
+
     const initializeAuth = async () => {
       try {
         // Check if user is already logged in from AsyncStorage
         const storedUser = await AsyncStorage.getItem("user");
-        if (storedUser) {
+        if (storedUser && mounted) {
           setUser(JSON.parse(storedUser));
+          hasStoredUser.current = true;
+          setLoading(false); // Stop loading once we restore from storage
         }
       } catch (error) {
         console.error("Error retrieving stored user:", error);
@@ -30,6 +35,8 @@ export const AuthProvider = ({ children }) => {
 
     // Listen to Firebase authentication state changes
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!mounted) return;
+
       if (firebaseUser) {
         // User logged in - save to AsyncStorage
         try {
@@ -45,19 +52,26 @@ export const AuthProvider = ({ children }) => {
           console.error("Error saving user to AsyncStorage:", error);
           setUser(firebaseUser); // Still set user even if storage fails
         }
+        setLoading(false);
       } else {
-        // User logged out
-        try {
-          await AsyncStorage.removeItem("user");
-        } catch (error) {
-          console.error("Error removing user from AsyncStorage:", error);
+        // Only clear user and storage if we don't have a stored user
+        // This prevents Firebase's initial null from clearing stored session
+        if (!hasStoredUser.current) {
+          try {
+            await AsyncStorage.removeItem("user");
+          } catch (error) {
+            console.error("Error removing user from AsyncStorage:", error);
+          }
+          setUser(null);
+          setLoading(false);
         }
-        setUser(null);
       }
-      setLoading(false);
     });
 
-    return unsubscribe; // Cleanup on unmount
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, []);
 
   // Logout function
@@ -73,7 +87,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ user, setUser, logout, loading }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
