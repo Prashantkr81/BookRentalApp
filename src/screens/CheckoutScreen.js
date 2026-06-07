@@ -1,21 +1,22 @@
-import React, { useContext, useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  Image,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  Platform,
-} from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { updateDoc, doc, addDoc, collection, getDoc, Timestamp } from "firebase/firestore";
-import { db, auth } from "../services/firebaseConfig";
-import { CartContext } from "../context/CartContext";
+import { addDoc, collection, doc, getDoc, Timestamp, updateDoc } from "firebase/firestore";
+import { useContext, useMemo, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import Header from "../components/Header";
+import { CartContext } from "../context/CartContext";
+import { useTheme } from "../context/ThemeContext";
+import { auth, db } from "../services/firebaseConfig";
 
 export default function CheckoutScreen({ route, navigation }) {
   const { cart } = route.params;
@@ -25,6 +26,8 @@ export default function CheckoutScreen({ route, navigation }) {
   const [paymentMethod, setPaymentMethod] = useState("Cash on Delivery");
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const user = auth.currentUser;
 
   const total = cart.reduce((sum, book) => sum + (book.price || 0), 0);
@@ -150,6 +153,7 @@ export default function CheckoutScreen({ route, navigation }) {
             <TextInput
               style={styles.input}
               placeholder="Enter your address"
+              placeholderTextColor={theme.colors.subText}
               value={address}
               onChangeText={setAddress}
               multiline
@@ -183,7 +187,7 @@ export default function CheckoutScreen({ route, navigation }) {
                 >
                   <Text
                     style={{
-                      color: paymentMethod === method ? "#fff" : "#333",
+                      color: paymentMethod === method ? "#fff" : theme.colors.text,
                       fontWeight: "bold",
                     }}
                   >
@@ -217,12 +221,12 @@ export default function CheckoutScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5" },
-  heading: { fontSize: 20, fontWeight: "bold", margin: 15 },
+const createStyles = (theme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  heading: { fontSize: 20, fontWeight: "bold", margin: 15, color: theme.colors.text },
   item: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     padding: 10,
     borderRadius: 8,
     marginHorizontal: 10,
@@ -231,29 +235,30 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   image: { width: 70, height: 100, borderRadius: 6, marginRight: 10 },
-  title: { fontSize: 16, fontWeight: "bold", color: "#333" },
-  author: { color: "#666" },
-  price: { color: "#2196F3", fontWeight: "bold" },
-  label: { fontSize: 16, fontWeight: "bold", marginHorizontal: 15, marginTop: 15, color: "#333" },
+  title: { fontSize: 16, fontWeight: "bold", color: theme.colors.text },
+  author: { color: theme.colors.subText },
+  price: { color: theme.colors.primary, fontWeight: "bold" },
+  label: { fontSize: 16, fontWeight: "bold", marginHorizontal: 15, marginTop: 15, color: theme.colors.text },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     borderRadius: 8,
     padding: 10,
     margin: 10,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: theme.colors.border,
     textAlignVertical: "top",
+    color: theme.colors.text,
   },
   dateButton: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     padding: 10,
     borderRadius: 8,
     margin: 10,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: theme.colors.border,
     alignItems: "center",
   },
-  dateText: { fontSize: 15, color: "#333" },
+  dateText: { fontSize: 15, color: theme.colors.text },
   paymentContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -261,18 +266,19 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   paymentOption: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: theme.colors.border,
+    color: theme.colors.text,
   },
-  selectedPayment: { backgroundColor: "#2196F3", borderColor: "#2196F3" },
-  footer: { backgroundColor: "#fff", padding: 15, borderTopWidth: 0.5, borderColor: "#ddd" },
-  totalText: { fontSize: 18, fontWeight: "bold", color: "#333", marginBottom: 10 },
+  selectedPayment: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  footer: { backgroundColor: theme.colors.card, padding: 15, borderTopWidth: 0.5, borderColor: theme.colors.border },
+  totalText: { fontSize: 18, fontWeight: "bold", color: theme.colors.text, marginBottom: 10 },
   confirmButton: {
-    backgroundColor: "#2196F3",
+    backgroundColor: theme.colors.primary,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: "center",

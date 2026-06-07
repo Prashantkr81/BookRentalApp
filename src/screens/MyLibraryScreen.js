@@ -1,23 +1,24 @@
 // src/screens/MyLibraryScreen.js
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Image,
-  Animated,
-} from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import { TabView, SceneMap, TabBar } from "react-native-tab-view";
 import {
-  collection,
-  query,
-  where,
-  onSnapshot,
+    collection,
+    onSnapshot,
+    query,
+    where,
 } from "firebase/firestore";
-import { db, auth } from "../services/firebaseConfig";
+import { useEffect, useMemo, useState } from "react";
+import {
+    Animated,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
+import { SceneMap, TabBar, TabView } from "react-native-tab-view";
 import Header from "../components/Header";
+import { useTheme } from "../context/ThemeContext";
+import { auth, db } from "../services/firebaseConfig";
 
 // -------------------- FADE-IN ANIMATION WRAPPER --------------------
 const FadeIn = ({ children }) => {
@@ -35,7 +36,7 @@ const FadeIn = ({ children }) => {
 };
 
 // -------------------- READ-ONLY BOOK CARD --------------------
-const BookCard = ({ book, history }) => {
+const BookCard = ({ book, history, theme, styles }) => {
   // Calculate rental duration
   let rentalDays = null;
   if (history && book.rentedAt && book.lastReturnedAt) {
@@ -83,6 +84,8 @@ const BookCard = ({ book, history }) => {
 // -------------------- MAIN SCREEN --------------------
 export default function MyLibraryScreen({ navigation }) {
   const user = auth.currentUser;
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [index, setIndex] = useState(0);
   const [sort, setSort] = useState("date");
@@ -166,7 +169,7 @@ export default function MyLibraryScreen({ navigation }) {
       <FlatList
         data={sortBooks(myBooks)}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <BookCard book={item} />}
+        renderItem={({ item }) => <BookCard book={item} theme={theme} styles={styles} />}
       />
     );
 
@@ -177,7 +180,7 @@ export default function MyLibraryScreen({ navigation }) {
       <FlatList
         data={sortBooks(rentedBooks)}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <BookCard book={item} />}
+        renderItem={({ item }) => <BookCard book={item} theme={theme} styles={styles} />}
       />
     );
 
@@ -188,7 +191,7 @@ export default function MyLibraryScreen({ navigation }) {
       <FlatList
         data={sortBooks(historyBooks)}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <BookCard book={item} history />}
+        renderItem={({ item }) => <BookCard book={item} history theme={theme} styles={styles} />}
       />
     );
 
@@ -199,7 +202,7 @@ export default function MyLibraryScreen({ navigation }) {
   });
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <Header
         title="My Library"
         showBack={true}
@@ -226,10 +229,10 @@ export default function MyLibraryScreen({ navigation }) {
         renderTabBar={(props) => (
           <TabBar
             {...props}
-            indicatorStyle={{ backgroundColor: "#2196F3" }}
-            style={{ backgroundColor: "#fff" }}
-            activeColor="#2196F3"
-            inactiveColor="#777"
+            indicatorStyle={{ backgroundColor: theme.colors.primary }}
+            style={{ backgroundColor: theme.colors.card, borderBottomWidth: 0.5, borderBottomColor: theme.colors.border }}
+            activeColor={theme.colors.primary}
+            inactiveColor={theme.colors.subText}
           />
         )}
       />
@@ -238,9 +241,9 @@ export default function MyLibraryScreen({ navigation }) {
 }
 
 // -------------------- STYLES --------------------
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     flexDirection: "row",
     borderRadius: 12,
     margin: 10,
@@ -251,30 +254,31 @@ const styles = StyleSheet.create({
     width: 90,
     height: 130,
     borderRadius: 8,
-    backgroundColor: "#eee",
+    backgroundColor: theme.colors.border,
   },
   bookTitle: {
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 2,
+    color: theme.colors.text,
   },
   bookAuthor: {
     fontSize: 14,
-    color: "#666",
+    color: theme.colors.subText,
     marginBottom: 10,
   },
   statusText: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#2196F3",
+    color: theme.colors.primary,
   },
   historyText: {
     fontSize: 14,
-    color: "#444",
+    color: theme.colors.text,
   },
   durationText: {
     fontSize: 13,
-    color: "#666",
+    color: theme.colors.subText,
     marginTop: 4,
     fontStyle: "italic",
   },
@@ -289,7 +293,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: "#777",
+    color: theme.colors.subText,
     textAlign: "center",
   },
   sortRow: {
@@ -297,13 +301,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 10,
     marginHorizontal: 15,
+    backgroundColor: theme.colors.card,
   },
   sortLabel: {
     fontSize: 15,
     fontWeight: "bold",
     marginRight: 10,
+    color: theme.colors.text,
   },
   picker: {
     flex: 1,
+    color: theme.colors.text,
   },
 });

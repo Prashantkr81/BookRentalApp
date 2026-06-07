@@ -95,7 +95,7 @@ export default function HomeScreen({ navigation }) {
         <QuickAction
           icon="add-circle-outline"
           label="Add Book"
-          onPress={() => navigation.navigate("Add Book")}
+          onPress={() => navigation.navigate("AddBook")}
         />
         <QuickAction
           icon="library-outline"

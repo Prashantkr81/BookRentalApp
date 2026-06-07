@@ -1,24 +1,24 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  Image,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-} from "react-native";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import {
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-  getDoc,
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    query,
+    where,
 } from "firebase/firestore";
-import { db, auth } from "../services/firebaseConfig";
+import { useEffect, useMemo, useState } from "react";
+import {
+    ActivityIndicator,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    View
+} from "react-native";
 import Header from "../components/Header";
+import { useTheme } from "../context/ThemeContext";
+import { auth, db } from "../services/firebaseConfig";
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -29,6 +29,8 @@ function RentedByMe() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const user = auth.currentUser;
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const fetchHistory = async () => {
     try {
@@ -96,7 +98,7 @@ function RentedByMe() {
   };
 
   if (loading)
-    return <ActivityIndicator size="large" color="#2196F3" style={{ marginTop: 30 }} />;
+    return <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 30 }} />;
 
   if (list.length === 0)
     return <Text style={styles.empty}>No rental history found.</Text>;
@@ -118,6 +120,8 @@ function RentedFromMe() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const user = auth.currentUser;
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const fetchMyBooksHistory = async () => {
     try {
@@ -185,7 +189,7 @@ function RentedFromMe() {
   };
 
   if (loading)
-    return <ActivityIndicator size="large" color="#2196F3" style={{ marginTop: 30 }} />;
+    return <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 30 }} />;
 
   if (list.length === 0)
     return <Text style={styles.empty}>No users have rented your books yet.</Text>;
@@ -204,15 +208,18 @@ function RentedFromMe() {
 // MAIN SCREEN WITH TABS
 // --------------------------------------------------
 export default function RentalHistoryScreen({ navigation }) {
+  const { theme } = useTheme();
+
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <Header title="Rental History" showBack={true} onBackPress={() => navigation.goBack()} />
 
       <Tab.Navigator
         screenOptions={{
-          tabBarActiveTintColor: "#2196F3",
-          tabBarInactiveTintColor: "#777",
-          tabBarIndicatorStyle: { backgroundColor: "#2196F3" },
+          tabBarActiveTintColor: theme.colors.primary,
+          tabBarInactiveTintColor: theme.colors.subText,
+          tabBarIndicatorStyle: { backgroundColor: theme.colors.primary },
+          tabBarStyle: { backgroundColor: theme.colors.card, borderBottomWidth: 0.5, borderBottomColor: theme.colors.border },
         }}
       >
         <Tab.Screen name="Rented By Me" component={RentedByMe} />
@@ -222,19 +229,19 @@ export default function RentalHistoryScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   card: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     padding: 12,
     borderRadius: 10,
     marginBottom: 10,
     elevation: 3,
   },
   image: { width: 75, height: 110, borderRadius: 8, marginRight: 10 },
-  title: { fontSize: 17, fontWeight: "bold", color: "#333" },
-  author: { fontSize: 14, color: "#666" },
-  text: { marginTop: 4, fontSize: 13, color: "#444" },
+  title: { fontSize: 17, fontWeight: "bold", color: theme.colors.text },
+  author: { fontSize: 14, color: theme.colors.subText },
+  text: { marginTop: 4, fontSize: 13, color: theme.colors.text },
   status: { marginTop: 6, color: "green", fontWeight: "bold" },
-  empty: { textAlign: "center", marginTop: 40, fontSize: 16, color: "#777" },
+  empty: { textAlign: "center", marginTop: 40, fontSize: 16, color: theme.colors.subText },
 });

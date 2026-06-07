@@ -1,19 +1,20 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-} from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { doc, updateDoc } from "firebase/firestore";
-import { db } from "../services/firebaseConfig";
+import { useMemo, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import Header from "../components/Header";
+import { useTheme } from "../context/ThemeContext";
+import { db } from "../services/firebaseConfig";
 
 export default function EditBookScreen({ route, navigation }) {
   const { book } = route.params;
@@ -25,6 +26,8 @@ export default function EditBookScreen({ route, navigation }) {
   const [imageUrl, setImageUrl] = useState(book.image);
 
   const [uploading, setUploading] = useState(false);
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   // ⭐ Cloudinary Config (same format as AddBookScreen)
   const CLOUD_NAME = "bookrental-81"; 
@@ -136,6 +139,7 @@ export default function EditBookScreen({ route, navigation }) {
         <TextInput
           style={styles.input}
           placeholder="Enter book title"
+          placeholderTextColor={theme.colors.subText}
           value={title}
           onChangeText={setTitle}
         />
@@ -144,6 +148,7 @@ export default function EditBookScreen({ route, navigation }) {
         <TextInput
           style={styles.input}
           placeholder="Enter author name"
+          placeholderTextColor={theme.colors.subText}
           value={author}
           onChangeText={setAuthor}
         />
@@ -152,6 +157,7 @@ export default function EditBookScreen({ route, navigation }) {
         <TextInput
           style={styles.input}
           placeholder="Price in ₹"
+          placeholderTextColor={theme.colors.subText}
           keyboardType="numeric"
           value={price}
           onChangeText={setPrice}
@@ -161,6 +167,7 @@ export default function EditBookScreen({ route, navigation }) {
         <TextInput
           style={[styles.input, { height: 90 }]}
           placeholder="Enter book description"
+          placeholderTextColor={theme.colors.subText}
           multiline
           value={description}
           onChangeText={setDescription}
@@ -176,8 +183,8 @@ export default function EditBookScreen({ route, navigation }) {
 
         {uploading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#2196F3" />
-            <Text style={{ marginTop: 8 }}>Uploading...</Text>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={{ marginTop: 8, color: theme.colors.text }}>Uploading...</Text>
           </View>
         ) : (
           <TouchableOpacity style={styles.updateButton} onPress={handleUpdate}>
@@ -192,10 +199,10 @@ export default function EditBookScreen({ route, navigation }) {
 // ----------------------------------------------------------
 // 🎨 STYLES
 // ----------------------------------------------------------
-const styles = StyleSheet.create({
+const createStyles = (theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: theme.colors.background,
   },
   formContainer: {
     padding: 20,
@@ -204,18 +211,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     marginTop: 10,
-    color: "#333",
+    color: theme.colors.text,
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: theme.colors.card,
     padding: 10,
     marginTop: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: theme.colors.border,
+    color: theme.colors.text,
   },
   imgBtn: {
-    backgroundColor: "#2196F3",
+    backgroundColor: theme.colors.primary,
     padding: 12,
     borderRadius: 8,
     marginTop: 15,
@@ -232,7 +240,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   updateButton: {
-    backgroundColor: "#2196F3",
+    backgroundColor: theme.colors.primary,
     padding: 14,
     borderRadius: 10,
     marginTop: 25,
